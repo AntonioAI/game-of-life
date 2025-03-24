@@ -1,6 +1,7 @@
 /*
  * Game of Life Simulator - Main Script
  * Implementation of Step 3.1 - Set Up the Canvas Element
+ * Implementation of Step 3.2 - Implement Cell Toggling Functionality
  */
 
 // Canvas and context references
@@ -70,6 +71,74 @@ function drawGrid() {
     }
 }
 
+// Toggle the state of a cell
+function toggleCell(x, y) {
+    // Ensure coordinates are within grid bounds
+    if (x >= 0 && x < gridSettings.cols && y >= 0 && y < gridSettings.rows) {
+        // Toggle the cell state (0 to 1 or 1 to 0)
+        grid[y][x] = grid[y][x] === 0 ? 1 : 0;
+        // Redraw the grid to show the updated state
+        drawGrid();
+    }
+}
+
+// Get grid coordinates from mouse/touch position
+function getCellCoordinates(event) {
+    // Get canvas position relative to viewport
+    const rect = canvas.getBoundingClientRect();
+    
+    // Calculate position within canvas
+    let clientX, clientY;
+    
+    // Handle both mouse and touch events
+    if (event.type.includes('touch')) {
+        // For touch events, use the first touch point
+        clientX = event.touches[0].clientX;
+        clientY = event.touches[0].clientY;
+    } else {
+        // For mouse events
+        clientX = event.clientX;
+        clientY = event.clientY;
+    }
+    
+    // Calculate the scale ratio between the canvas's displayed size and its actual size
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // Get the position within the canvas, accounting for scaling
+    const canvasX = (clientX - rect.left) * scaleX;
+    const canvasY = (clientY - rect.top) * scaleY;
+    
+    // Convert to grid coordinates
+    const gridX = Math.floor(canvasX / gridSettings.cellSize);
+    const gridY = Math.floor(canvasY / gridSettings.cellSize);
+    
+    return { x: gridX, y: gridY };
+}
+
+// Handle canvas click/touch events
+function handleCanvasInteraction(event) {
+    // Prevent default behavior (like scrolling on mobile)
+    event.preventDefault();
+    
+    const coords = getCellCoordinates(event);
+    toggleCell(coords.x, coords.y);
+}
+
+// Setup event listeners for canvas interactions
+function setupCanvasInteractions() {
+    // Mouse events
+    canvas.addEventListener('mousedown', handleCanvasInteraction);
+    
+    // Touch events for mobile devices
+    canvas.addEventListener('touchstart', handleCanvasInteraction, { passive: false });
+    
+    // Prevent context menu on right-click
+    canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+    });
+}
+
 // Create grid size settings panel
 function createSettingsPanel() {
     const controlsDiv = document.querySelector('.controls');
@@ -135,6 +204,7 @@ function init() {
     initializeGrid();
     drawGrid();
     createSettingsPanel();
+    setupCanvasInteractions();
 }
 
 // Call init when the page is loaded

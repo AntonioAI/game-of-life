@@ -28,14 +28,23 @@
 - Implemented custom size input functionality
 - Added responsive styling for the settings panel
 
+### 2023-03-24: Implemented Step 3.2 - Implement Cell Toggling Functionality
+- Added functionality to toggle cells between alive and dead states with mouse clicks
+- Implemented cross-browser compatible event handling
+- Added support for touch events on mobile devices
+- Created coordinate translation system for accurate cell targeting
+- Prevented default behaviors (like right-click menu) for smoother experience
+- Ensured proper event cleanup to avoid memory leaks
+- Validated cell coordinates to prevent out-of-bounds errors
+
 ## In Progress
 
-### Step 3.2 - Implement Cell Toggling Functionality
+### Step 4.1 - Define the Simulation Rules
 - Status: Not started
 
 ## Next Steps
-- Implement Step 3.2 - Implement Cell Toggling Functionality
-- Proceed with Step 4.1 - Define the Simulation Rules
+- Implement Step 4.1 - Define the Simulation Rules
+- Proceed with Step 4.2 - Integrate the Simulation Loop
 
 ## Notes for Future Developers
 - The HTML structure follows a modular approach with separate containers for different UI elements
@@ -44,3 +53,4 @@
 - Color scheme is defined using CSS variables for easy theming in the future
 - Layout changes from column (mobile) to row (desktop) for better space utilization
 - Grid settings can be customized through the UI with validation for size constraints
+- Cell toggling works on both desktop (mouse) and mobile (touch) devices

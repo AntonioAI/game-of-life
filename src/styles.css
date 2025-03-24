@@ -165,3 +165,89 @@ footer {
         font-size: 1.5rem;
     }
 }
+
+/* Grid settings styles */
+.grid-settings {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.grid-settings h3 {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.preset-buttons {
+    display: flex;
+    justify-content: space-around;
+    gap: 0.5rem;
+}
+
+.preset-buttons button {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.preset-buttons button:hover {
+    background-color: var(--button-hover);
+}
+
+.custom-size {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.custom-size label {
+    font-size: 0.9rem;
+}
+
+.custom-size input {
+    width: 100%;
+    padding: 0.3rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+#apply-size {
+    grid-column: 1 / -1;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+#apply-size:hover {
+    background-color: var(--button-hover);
+}
+
+/* For small screens, adjust the grid settings layout */
+@media screen and (max-width: 480px) {
+    .custom-size {
+        grid-template-columns: 1fr;
+    }
+    
+    .preset-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .preset-buttons button {
+        width: 100%;
+    }
+}

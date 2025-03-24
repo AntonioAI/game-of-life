@@ -54,53 +54,58 @@ header h1 {
     font-weight: 600;
 }
 
-/* Main content area */
+/* Main content layout */
 main {
-    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    width: 100%;
 }
 
-/* Canvas container */
 .canvas-container {
     display: flex;
     justify-content: center;
-    margin-bottom: 1rem;
+    width: 100%;
 }
 
 #game-canvas {
-    background-color: white;
-    border: 1px solid var(--canvas-border);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
     max-width: 100%;
-    height: auto;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: white;
 }
 
-/* Controls section */
-.controls {
+/* Sidebar layout */
+.sidebar {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background-color: white;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
 }
 
-/* Patterns section */
-.patterns {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
+/* Control panel styles */
+.controls, .patterns, .analytics {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 1rem;
-    background-color: white;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    width: 100%;
+}
+
+.controls h2, .patterns h2, .analytics h2 {
+    color: var(--primary-color);
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.simulation-controls h3 {
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
 }
 
 /* Analytics section */
@@ -118,49 +123,83 @@ main {
     font-size: 18px;
 }
 
+.analytics-content {
+    padding: 0 5px;
+}
+
 .analytics-data {
     display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
 }
 
 .analytics-item {
-    background-color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 8px 12px;
+    background-color: #f5f7fa;
     border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .analytics-label {
-    font-weight: bold;
-    margin-right: 5px;
+    font-weight: 500;
+    color: #555;
 }
 
-/* Enhanced simulation controls */
-.speed-control {
-    margin-top: 15px;
+.analytics-value {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1.1rem;
 }
 
-.speed-control label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-#speed-slider {
-    width: 100%;
-    cursor: pointer;
-}
-
+/* Control button styles */
 .control-buttons {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 .control-buttons button {
     flex: 1;
     min-width: 80px;
+    padding: 8px 12px;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.control-buttons button:hover:not(:disabled) {
+    background-color: var(--button-hover);
+    transform: translateY(-2px);
+}
+
+.control-buttons button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+/* Speed control styling */
+.speed-control {
+    margin: 15px 0;
+}
+
+.speed-control label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+#speed-slider {
+    width: 100%;
+    cursor: pointer;
 }
 
 /* Footer styles */
@@ -177,7 +216,6 @@ footer {
 @media screen and (min-width: 768px) {
     main {
         flex-direction: row;
-        flex-wrap: wrap;
     }
     
     .canvas-container {
@@ -185,9 +223,17 @@ footer {
         min-width: 60%;
     }
     
-    .controls, .patterns, .analytics {
+    .sidebar {
         flex: 1;
         min-width: 30%;
+    }
+    
+    .analytics-data {
+        flex-direction: row;
+    }
+    
+    .control-buttons {
+        flex-wrap: nowrap;
     }
 }
 
@@ -200,6 +246,10 @@ footer {
     header h1 {
         font-size: 1.8rem;
     }
+    
+    .sidebar {
+        width: 100%;
+    }
 }
 
 /* For very small screens */
@@ -210,6 +260,23 @@ footer {
     
     header h1 {
         font-size: 1.5rem;
+    }
+    
+    .control-buttons {
+        flex-direction: column;
+    }
+    
+    .custom-size {
+        grid-template-columns: 1fr;
+    }
+    
+    .preset-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .preset-buttons button {
+        width: 100%;
     }
 }
 
@@ -283,35 +350,15 @@ footer {
     background-color: var(--button-hover);
 }
 
-/* For small screens, adjust the grid settings layout */
-@media screen and (max-width: 480px) {
-    .custom-size {
-        grid-template-columns: 1fr;
-    }
-    
-    .preset-buttons {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .preset-buttons button {
-        width: 100%;
-    }
-}
-
 /* Disabled button styles */
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-/* Responsive adjustments */
-@media (min-width: 768px) {
-    .analytics-data {
-        flex-direction: row;
-    }
-    
-    .control-buttons {
-        flex-wrap: nowrap;
-    }
+/* Primary button style */
+.primary-button {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    font-weight: bold;
 }

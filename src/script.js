@@ -345,48 +345,44 @@ function simulationLoop(timestamp) {
 
 // Start the simulation
 function startSimulation() {
-    if (!isSimulationRunning) {
-        isSimulationRunning = true;
-        lastFrameTime = 0;
-        animationFrameId = requestAnimationFrame(simulationLoop);
-        
-        // Update button states
-        document.getElementById('start-button').disabled = true;
-        document.getElementById('pause-button').disabled = false;
-    }
+    if (isSimulationRunning) return;
+    
+    // Set the simulation state to running
+    isSimulationRunning = true;
+    
+    // Start the animation loop
+    lastFrameTime = 0;
+    animationFrameId = requestAnimationFrame(simulationLoop);
 }
 
 // Pause the simulation
 function pauseSimulation() {
-    if (isSimulationRunning) {
-        isSimulationRunning = false;
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-        }
-        
-        // Update button states
-        document.getElementById('start-button').disabled = false;
-        document.getElementById('pause-button').disabled = true;
+    if (!isSimulationRunning) return;
+    
+    // Set the simulation state to paused
+    isSimulationRunning = false;
+    
+    // Cancel any pending animation frame
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
     }
 }
 
-// Reset the simulation
+// Reset simulation to initial state
 function resetSimulation() {
-    // Pause first
-    pauseSimulation();
+    // Pause the simulation if it's running
+    if (isSimulationRunning) {
+        pauseSimulation();
+    }
     
-    // Reset the grid and generation count
+    // Reset the grid and generation counter
     initializeGrid();
     generationCount = 0;
     
-    // Redraw and update analytics
+    // Redraw the grid and update analytics
     drawGrid();
     updateAnalytics();
-    
-    // Update button states
-    document.getElementById('start-button').disabled = false;
-    document.getElementById('pause-button').disabled = true;
 }
 
 // Update simulation speed
@@ -415,19 +411,22 @@ function updateAnalytics() {
 function createAnalyticsDisplay() {
     const analyticsDiv = document.querySelector('.analytics');
     
-    analyticsDiv.innerHTML = `
-        <h3>Analytics</h3>
+    const analyticsContent = document.createElement('div');
+    analyticsContent.className = 'analytics-content';
+    analyticsContent.innerHTML = `
         <div class="analytics-data">
             <div class="analytics-item">
                 <span class="analytics-label">Generation:</span>
-                <span id="generation-count">0</span>
+                <span id="generation-count" class="analytics-value">0</span>
             </div>
             <div class="analytics-item">
                 <span class="analytics-label">Live Cells:</span>
-                <span id="live-cell-count">0</span>
+                <span id="live-cell-count" class="analytics-value">0</span>
             </div>
         </div>
     `;
+    
+    analyticsDiv.appendChild(analyticsContent);
     
     // Initialize analytics
     updateAnalytics();
@@ -468,11 +467,11 @@ function createSimulationControls() {
     controlsContainer.innerHTML = `
         <h3>Simulation Controls</h3>
         <div class="control-buttons">
-            <button id="start-button">Start</button>
-            <button id="pause-button" disabled>Pause</button>
-            <button id="step-button">Step</button>
-            <button id="reset-button">Reset</button>
-            <button id="test-pattern-button">Create Glider</button>
+            <button id="start-button" class="primary-button">▶ Start</button>
+            <button id="pause-button" disabled>⏸️ Pause</button>
+            <button id="step-button">⏭️ Step</button>
+            <button id="reset-button">🔄 Reset</button>
+            <button id="test-pattern-button">⚙️ Create Glider</button>
         </div>
         <div class="speed-control">
             <label for="speed-slider">Speed: <span id="speed-value">${simulationSpeed}</span> FPS</label>
@@ -483,10 +482,36 @@ function createSimulationControls() {
     controlsDiv.appendChild(controlsContainer);
     
     // Add event listeners to control buttons
-    document.getElementById('start-button').addEventListener('click', startSimulation);
-    document.getElementById('pause-button').addEventListener('click', pauseSimulation);
-    document.getElementById('step-button').addEventListener('click', stepSimulation);
-    document.getElementById('reset-button').addEventListener('click', resetSimulation);
+    const startButton = document.getElementById('start-button');
+    const pauseButton = document.getElementById('pause-button');
+    const stepButton = document.getElementById('step-button');
+    const resetButton = document.getElementById('reset-button');
+    
+    startButton.addEventListener('click', () => {
+        startSimulation();
+        startButton.disabled = true;
+        pauseButton.disabled = false;
+        pauseButton.classList.add('primary-button');
+        startButton.classList.remove('primary-button');
+    });
+    
+    pauseButton.addEventListener('click', () => {
+        pauseSimulation();
+        pauseButton.disabled = true;
+        startButton.disabled = false;
+        startButton.classList.add('primary-button');
+        pauseButton.classList.remove('primary-button');
+    });
+    
+    stepButton.addEventListener('click', stepSimulation);
+    resetButton.addEventListener('click', () => {
+        resetSimulation();
+        // Reset button states
+        startButton.disabled = false;
+        pauseButton.disabled = true;
+        startButton.classList.add('primary-button');
+        pauseButton.classList.remove('primary-button');
+    });
     
     // Add event listener to test pattern button
     const testPatternButton = document.getElementById('test-pattern-button');

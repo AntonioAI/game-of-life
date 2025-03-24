@@ -37,14 +37,25 @@
 - Ensured proper event cleanup to avoid memory leaks
 - Validated cell coordinates to prevent out-of-bounds errors
 
+### 2023-03-25: Implemented Step 4.1 - Define the Simulation Rules
+- Implemented Conway's Game of Life rules (underpopulation, survival, overcrowding, reproduction)
+- Created a neighbor counting function with optimized boundary handling
+- Added toroidal grid wrapping (edges connect) as the default boundary type
+- Implemented a finite grid boundary option as an alternative
+- Added UI control to toggle between boundary types
+- Developed a step function to advance the simulation by one generation
+- Ensured accurate cell state calculation based on the current grid state
+- Added a "Step" button to manually advance the simulation one generation at a time
+- Created a "Glider" test pattern button to verify the simulation rules work correctly
+
 ## In Progress
 
-### Step 4.1 - Define the Simulation Rules
+### Step 4.2 - Integrate the Simulation Loop
 - Status: Not started
 
 ## Next Steps
-- Implement Step 4.1 - Define the Simulation Rules
-- Proceed with Step 4.2 - Integrate the Simulation Loop
+- Implement Step 4.2 - Integrate the Simulation Loop
+- Proceed with Step 5.1 - Develop UI Controls for the Simulation
 
 ## Notes for Future Developers
 - The HTML structure follows a modular approach with separate containers for different UI elements
@@ -54,3 +65,6 @@
 - Layout changes from column (mobile) to row (desktop) for better space utilization
 - Grid settings can be customized through the UI with validation for size constraints
 - Cell toggling works on both desktop (mouse) and mobile (touch) devices
+- The simulation implements both toroidal (wrapping) and finite grid boundaries
+- The algorithm for computing the next generation follows Conway's rules accurately
+- The step function can be used to advance the simulation by one generation at a time

@@ -24,6 +24,13 @@ let grid = [];
 // Grid boundary type (toroidal or finite)
 let boundaryType = 'toroidal'; // default is toroidal (edges connect)
 
+// Simulation loop variables
+let isSimulationRunning = false;
+let animationFrameId = null;
+let lastFrameTime = 0;
+let simulationSpeed = 10; // Frames per second
+let generationCount = 0;
+
 // Initialize the grid with all cells dead (0)
 function initializeGrid() {
     grid = [];
@@ -285,6 +292,8 @@ function computeNextGeneration() {
 function stepSimulation() {
     computeNextGeneration();
     drawGrid();
+    generationCount++;
+    updateAnalytics();
 }
 
 // Function to toggle between toroidal and finite grid
@@ -316,6 +325,114 @@ function addBoundaryToggle() {
     });
 }
 
+// Main simulation loop using requestAnimationFrame
+function simulationLoop(timestamp) {
+    // Calculate time since last frame
+    if (!lastFrameTime) lastFrameTime = timestamp;
+    const elapsed = timestamp - lastFrameTime;
+    
+    // Check if it's time to update the simulation (based on simulation speed)
+    if (elapsed > (1000 / simulationSpeed)) {
+        stepSimulation();
+        lastFrameTime = timestamp;
+    }
+    
+    // Continue the loop if simulation is running
+    if (isSimulationRunning) {
+        animationFrameId = requestAnimationFrame(simulationLoop);
+    }
+}
+
+// Start the simulation
+function startSimulation() {
+    if (!isSimulationRunning) {
+        isSimulationRunning = true;
+        lastFrameTime = 0;
+        animationFrameId = requestAnimationFrame(simulationLoop);
+        
+        // Update button states
+        document.getElementById('start-button').disabled = true;
+        document.getElementById('pause-button').disabled = false;
+    }
+}
+
+// Pause the simulation
+function pauseSimulation() {
+    if (isSimulationRunning) {
+        isSimulationRunning = false;
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        
+        // Update button states
+        document.getElementById('start-button').disabled = false;
+        document.getElementById('pause-button').disabled = true;
+    }
+}
+
+// Reset the simulation
+function resetSimulation() {
+    // Pause first
+    pauseSimulation();
+    
+    // Reset the grid and generation count
+    initializeGrid();
+    generationCount = 0;
+    
+    // Redraw and update analytics
+    drawGrid();
+    updateAnalytics();
+    
+    // Update button states
+    document.getElementById('start-button').disabled = false;
+    document.getElementById('pause-button').disabled = true;
+}
+
+// Update simulation speed
+function updateSimulationSpeed(newSpeed) {
+    simulationSpeed = parseInt(newSpeed, 10);
+}
+
+// Update analytics display
+function updateAnalytics() {
+    // Count live cells
+    let liveCellCount = 0;
+    for (let y = 0; y < gridSettings.rows; y++) {
+        for (let x = 0; x < gridSettings.cols; x++) {
+            if (grid[y][x] === 1) {
+                liveCellCount++;
+            }
+        }
+    }
+    
+    // Update the display
+    document.getElementById('generation-count').textContent = generationCount;
+    document.getElementById('live-cell-count').textContent = liveCellCount;
+}
+
+// Create analytics display
+function createAnalyticsDisplay() {
+    const analyticsDiv = document.querySelector('.analytics');
+    
+    analyticsDiv.innerHTML = `
+        <h3>Analytics</h3>
+        <div class="analytics-data">
+            <div class="analytics-item">
+                <span class="analytics-label">Generation:</span>
+                <span id="generation-count">0</span>
+            </div>
+            <div class="analytics-item">
+                <span class="analytics-label">Live Cells:</span>
+                <span id="live-cell-count">0</span>
+            </div>
+        </div>
+    `;
+    
+    // Initialize analytics
+    updateAnalytics();
+}
+
 // Add a test pattern (glider) for verifying rules
 function createTestPattern() {
     // Clear the grid first
@@ -341,7 +458,7 @@ function createTestPattern() {
     drawGrid();
 }
 
-// Add a test pattern button to the simulation controls
+// Update the simulation controls
 function createSimulationControls() {
     const controlsDiv = document.querySelector('.controls');
     
@@ -351,23 +468,42 @@ function createSimulationControls() {
     controlsContainer.innerHTML = `
         <h3>Simulation Controls</h3>
         <div class="control-buttons">
+            <button id="start-button">Start</button>
+            <button id="pause-button" disabled>Pause</button>
             <button id="step-button">Step</button>
+            <button id="reset-button">Reset</button>
             <button id="test-pattern-button">Create Glider</button>
+        </div>
+        <div class="speed-control">
+            <label for="speed-slider">Speed: <span id="speed-value">${simulationSpeed}</span> FPS</label>
+            <input type="range" id="speed-slider" min="1" max="60" value="${simulationSpeed}" step="1">
         </div>
     `;
     
     controlsDiv.appendChild(controlsContainer);
     
-    // Add event listener to step button
-    const stepButton = document.getElementById('step-button');
-    stepButton.addEventListener('click', stepSimulation);
+    // Add event listeners to control buttons
+    document.getElementById('start-button').addEventListener('click', startSimulation);
+    document.getElementById('pause-button').addEventListener('click', pauseSimulation);
+    document.getElementById('step-button').addEventListener('click', stepSimulation);
+    document.getElementById('reset-button').addEventListener('click', resetSimulation);
     
     // Add event listener to test pattern button
     const testPatternButton = document.getElementById('test-pattern-button');
     testPatternButton.addEventListener('click', createTestPattern);
+    
+    // Add event listener to speed slider
+    const speedSlider = document.getElementById('speed-slider');
+    const speedValue = document.getElementById('speed-value');
+    
+    speedSlider.addEventListener('input', () => {
+        const newSpeed = speedSlider.value;
+        speedValue.textContent = newSpeed;
+        updateSimulationSpeed(newSpeed);
+    });
 }
 
-// Update the init function to include the simulation controls
+// Update the init function to include analytics display
 function init() {
     calculateCanvasDimensions();
     initializeGrid();
@@ -375,6 +511,7 @@ function init() {
     createSettingsPanel();
     addBoundaryToggle();
     createSimulationControls();
+    createAnalyticsDisplay();
     setupCanvasInteractions();
 }
 

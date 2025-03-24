@@ -1,0 +1,167 @@
+/* 
+ * Game of Life Simulator - Styles
+ * This file will be populated in Step 2.2 
+ */ 
+
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --background-color: #f5f5f5;
+    --text-color: #333;
+    --border-color: #ddd;
+    --canvas-border: #bbb;
+    --button-hover: #2980b9;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header styles */
+header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+header h1 {
+    color: var(--primary-color);
+    font-size: 2.5rem;
+    font-weight: 600;
+}
+
+/* Main content area */
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Canvas container */
+.canvas-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+#game-canvas {
+    background-color: white;
+    border: 1px solid var(--canvas-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    max-width: 100%;
+    height: auto;
+}
+
+/* Controls section */
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+/* Patterns section */
+.patterns {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+/* Analytics section */
+.analytics {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+/* Footer styles */
+footer {
+    text-align: center;
+    margin-top: auto;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* Responsive styles */
+@media screen and (min-width: 768px) {
+    main {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .canvas-container {
+        flex: 2;
+        min-width: 60%;
+    }
+    
+    .controls, .patterns, .analytics {
+        flex: 1;
+        min-width: 30%;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    #game-canvas {
+        max-width: 100%;
+        height: auto;
+    }
+    
+    header h1 {
+        font-size: 1.8rem;
+    }
+}
+
+/* For very small screens */
+@media screen and (max-width: 480px) {
+    .container {
+        padding: 0.5rem;
+    }
+    
+    header h1 {
+        font-size: 1.5rem;
+    }
+}

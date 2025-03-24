@@ -467,11 +467,11 @@ function createSimulationControls() {
     controlsContainer.innerHTML = `
         <h3>Simulation Controls</h3>
         <div class="control-buttons">
-            <button id="start-button" class="primary-button">▶ Start</button>
-            <button id="pause-button" disabled>⏸️ Pause</button>
-            <button id="step-button">⏭️ Step</button>
-            <button id="reset-button">🔄 Reset</button>
-            <button id="test-pattern-button">⚙️ Create Glider</button>
+            <button id="start-button" class="primary-button"><span class="icon">▶</span> Start</button>
+            <button id="pause-button" disabled><span class="icon">■</span> Pause</button>
+            <button id="step-button"><span class="icon">➡</span> Step</button>
+            <button id="reset-button"><span class="icon">↺</span> Reset</button>
+            <button id="test-pattern-button"><span class="icon">+</span> Glider</button>
         </div>
         <div class="speed-control">
             <label for="speed-slider">Speed: <span id="speed-value">${simulationSpeed}</span> FPS</label>

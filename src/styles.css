@@ -88,6 +88,7 @@ main {
     display: flex;
     gap: 1.5rem;
     flex-wrap: wrap;
+    width: 100%;
 }
 
 /* Control panel styles */
@@ -97,7 +98,7 @@ main {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 1rem;
     flex: 1;
-    min-width: 250px;
+    min-width: 280px;
 }
 
 .controls h2, .patterns h2, .analytics h2 {
@@ -241,13 +242,13 @@ footer {
     }
     
     .canvas-container {
-        flex: 2;
-        min-width: 60%;
+        flex: 1.5;
+        min-width: 50%;
     }
     
     .sidebar {
         flex: 1;
-        min-width: 30%;
+        min-width: 600px;
     }
     
     .control-panels {
@@ -257,7 +258,8 @@ footer {
     
     .controls, .analytics {
         flex: 1;
-        min-width: 0;
+        min-width: 280px;
+        max-width: calc(50% - 0.75rem);
     }
     
     /* For larger screens, we can use more columns */
@@ -286,6 +288,7 @@ footer {
     
     .controls, .analytics {
         width: 100%;
+        min-width: 100%;
     }
     
     /* For medium screens */

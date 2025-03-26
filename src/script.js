@@ -206,6 +206,7 @@ function resizeGrid(rows, cols) {
     calculateCanvasDimensions();
     initializeGrid();
     drawGrid();
+    updateAnalytics();
 }
 
 // Count the number of alive neighbors for a given cell
@@ -299,6 +300,7 @@ function stepSimulation() {
 // Function to toggle between toroidal and finite grid
 function toggleBoundaryType() {
     boundaryType = boundaryType === 'toroidal' ? 'finite' : 'toroidal';
+    updateAnalytics();
     return boundaryType;
 }
 
@@ -322,6 +324,7 @@ function addBoundaryToggle() {
     const boundaryToggle = document.getElementById('boundary-toggle');
     boundaryToggle.addEventListener('change', () => {
         boundaryType = boundaryToggle.value;
+        updateAnalytics();
     });
 }
 
@@ -349,6 +352,7 @@ function startSimulation() {
     
     // Set the simulation state to running
     isSimulationRunning = true;
+    updateAnalytics();
     
     // Start the animation loop
     lastFrameTime = 0;
@@ -361,6 +365,7 @@ function pauseSimulation() {
     
     // Set the simulation state to paused
     isSimulationRunning = false;
+    updateAnalytics();
     
     // Cancel any pending animation frame
     if (animationFrameId) {
@@ -388,6 +393,7 @@ function resetSimulation() {
 // Update simulation speed
 function updateSimulationSpeed(newSpeed) {
     simulationSpeed = parseInt(newSpeed, 10);
+    updateAnalytics();
 }
 
 // Update analytics display
@@ -402,9 +408,18 @@ function updateAnalytics() {
         }
     }
     
-    // Update the display
+    // Calculate population density
+    const totalCells = gridSettings.rows * gridSettings.cols;
+    const density = (liveCellCount / totalCells) * 100;
+    
+    // Update all analytics displays
     document.getElementById('generation-count').textContent = generationCount;
     document.getElementById('live-cell-count').textContent = liveCellCount;
+    document.getElementById('population-density').textContent = density.toFixed(1) + '%';
+    document.getElementById('grid-size').textContent = `${gridSettings.rows}×${gridSettings.cols}`;
+    document.getElementById('speed-display').textContent = `${simulationSpeed} FPS`;
+    document.getElementById('simulation-state').textContent = isSimulationRunning ? 'Running' : 'Paused';
+    document.getElementById('boundary-type-display').textContent = boundaryType.charAt(0).toUpperCase() + boundaryType.slice(1);
 }
 
 // Create analytics display
@@ -414,6 +429,7 @@ function createAnalyticsDisplay() {
     const analyticsContent = document.createElement('div');
     analyticsContent.className = 'analytics-content';
     analyticsContent.innerHTML = `
+        <h3>Analytics</h3>
         <div class="analytics-data">
             <div class="analytics-item">
                 <span class="analytics-label">Generation:</span>
@@ -422,6 +438,26 @@ function createAnalyticsDisplay() {
             <div class="analytics-item">
                 <span class="analytics-label">Live Cells:</span>
                 <span id="live-cell-count" class="analytics-value">0</span>
+            </div>
+            <div class="analytics-item">
+                <span class="analytics-label">Population Density:</span>
+                <span id="population-density" class="analytics-value">0.0%</span>
+            </div>
+            <div class="analytics-item">
+                <span class="analytics-label">Grid Size:</span>
+                <span id="grid-size" class="analytics-value">50×50</span>
+            </div>
+            <div class="analytics-item">
+                <span class="analytics-label">Speed:</span>
+                <span id="speed-display" class="analytics-value">10 FPS</span>
+            </div>
+            <div class="analytics-item">
+                <span class="analytics-label">State:</span>
+                <span id="simulation-state" class="analytics-value">Paused</span>
+            </div>
+            <div class="analytics-item">
+                <span class="analytics-label">Boundary:</span>
+                <span id="boundary-type-display" class="analytics-value">Toroidal</span>
             </div>
         </div>
     `;

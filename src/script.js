@@ -10,7 +10,6 @@ const ctx = canvas.getContext('2d');
 
 // Default grid settings
 let gridSettings = {
-    cellSize: 10,
     rows: 50,
     cols: 50,
     gridColor: '#dddddd',
@@ -43,28 +42,51 @@ function initializeGrid() {
     }
 }
 
+// Calculate cell size based on canvas dimensions and grid size
+function calculateCellSize() {
+    const canvas = document.getElementById('game-canvas');
+    const smallestDimension = Math.min(canvas.width, canvas.height);
+    return Math.floor(smallestDimension / Math.max(gridSettings.rows, gridSettings.cols));
+}
+
 // Calculate canvas dimensions based on grid size
 function calculateCanvasDimensions() {
-    canvas.width = gridSettings.cols * gridSettings.cellSize;
-    canvas.height = gridSettings.rows * gridSettings.cellSize;
+    const canvas = document.getElementById('game-canvas');
+    // Canvas size remains fixed at 600x600
+    canvas.width = 600;
+    canvas.height = 600;
+    // Update cell size based on grid dimensions
+    gridSettings.cellSize = calculateCellSize();
 }
 
 // Draw the grid on the canvas
 function drawGrid() {
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    
     // Clear the canvas
     ctx.fillStyle = gridSettings.backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
+    // Calculate the offset to center the grid
+    const totalGridWidth = gridSettings.cols * gridSettings.cellSize;
+    const totalGridHeight = gridSettings.rows * gridSettings.cellSize;
+    const offsetX = (canvas.width - totalGridWidth) / 2;
+    const offsetY = (canvas.height - totalGridHeight) / 2;
+    
     // Draw the cells
     for (let y = 0; y < gridSettings.rows; y++) {
         for (let x = 0; x < gridSettings.cols; x++) {
+            const cellX = offsetX + (x * gridSettings.cellSize);
+            const cellY = offsetY + (y * gridSettings.cellSize);
+            
             // If cell is alive, fill it with cell color
             if (grid[y][x] === 1) {
                 ctx.fillStyle = gridSettings.cellColor;
                 ctx.fillRect(
-                    x * gridSettings.cellSize, 
-                    y * gridSettings.cellSize, 
-                    gridSettings.cellSize, 
+                    cellX,
+                    cellY,
+                    gridSettings.cellSize,
                     gridSettings.cellSize
                 );
             }
@@ -72,9 +94,9 @@ function drawGrid() {
             // Draw grid lines
             ctx.strokeStyle = gridSettings.gridColor;
             ctx.strokeRect(
-                x * gridSettings.cellSize, 
-                y * gridSettings.cellSize, 
-                gridSettings.cellSize, 
+                cellX,
+                cellY,
+                gridSettings.cellSize,
                 gridSettings.cellSize
             );
         }
@@ -94,7 +116,7 @@ function toggleCell(x, y) {
 
 // Get grid coordinates from mouse/touch position
 function getCellCoordinates(event) {
-    // Get canvas position relative to viewport
+    const canvas = document.getElementById('game-canvas');
     const rect = canvas.getBoundingClientRect();
     
     // Calculate position within canvas
@@ -102,11 +124,9 @@ function getCellCoordinates(event) {
     
     // Handle both mouse and touch events
     if (event.type.includes('touch')) {
-        // For touch events, use the first touch point
         clientX = event.touches[0].clientX;
         clientY = event.touches[0].clientY;
     } else {
-        // For mouse events
         clientX = event.clientX;
         clientY = event.clientY;
     }
@@ -115,9 +135,15 @@ function getCellCoordinates(event) {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
-    // Get the position within the canvas, accounting for scaling
-    const canvasX = (clientX - rect.left) * scaleX;
-    const canvasY = (clientY - rect.top) * scaleY;
+    // Calculate the offset to center the grid
+    const totalGridWidth = gridSettings.cols * gridSettings.cellSize;
+    const totalGridHeight = gridSettings.rows * gridSettings.cellSize;
+    const offsetX = (canvas.width - totalGridWidth) / 2;
+    const offsetY = (canvas.height - totalGridHeight) / 2;
+    
+    // Get the position within the canvas, accounting for scaling and offset
+    const canvasX = (clientX - rect.left) * scaleX - offsetX;
+    const canvasY = (clientY - rect.top) * scaleY - offsetY;
     
     // Convert to grid coordinates
     const gridX = Math.floor(canvasX / gridSettings.cellSize);

@@ -199,7 +199,7 @@ function calculateCanvasDimensions() {
 // Draw the grid on the canvas
 function drawGrid() {
     const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false }); // Disable alpha for better performance
     
     // Clear the canvas
     ctx.fillStyle = gridSettings.backgroundColor;
@@ -208,35 +208,44 @@ function drawGrid() {
     // Calculate the offset to center the grid
     const totalGridWidth = gridSettings.cols * gridSettings.cellSize;
     const totalGridHeight = gridSettings.rows * gridSettings.cellSize;
-    const offsetX = (canvas.width - totalGridWidth) / 2;
-    const offsetY = (canvas.height - totalGridHeight) / 2;
+    const offsetX = Math.floor((canvas.width - totalGridWidth) / 2);
+    const offsetY = Math.floor((canvas.height - totalGridHeight) / 2);
     
-    // Draw the cells
+    // Performance optimization: batch similar operations
+    const cellSize = gridSettings.cellSize;
+    
+    // First pass: Draw all live cells
+    ctx.fillStyle = gridSettings.cellColor;
     for (let y = 0; y < gridSettings.rows; y++) {
         for (let x = 0; x < gridSettings.cols; x++) {
-            const cellX = offsetX + (x * gridSettings.cellSize);
-            const cellY = offsetY + (y * gridSettings.cellSize);
-            
-            // If cell is alive, fill it with cell color
             if (grid[y][x] === 1) {
-                ctx.fillStyle = gridSettings.cellColor;
-                ctx.fillRect(
-                    cellX,
-                    cellY,
-                    gridSettings.cellSize,
-                    gridSettings.cellSize
-                );
+                const cellX = offsetX + (x * cellSize);
+                const cellY = offsetY + (y * cellSize);
+                ctx.fillRect(cellX, cellY, cellSize, cellSize);
             }
-            
-            // Draw grid lines
-            ctx.strokeStyle = gridSettings.gridColor;
-            ctx.strokeRect(
-                cellX,
-                cellY,
-                gridSettings.cellSize,
-                gridSettings.cellSize
-            );
         }
+    }
+    
+    // Second pass: Draw grid lines (only if cell size is large enough)
+    if (cellSize >= 4) { // Skip grid lines for very small cells to improve performance
+        ctx.strokeStyle = gridSettings.gridColor;
+        ctx.beginPath();
+        
+        // Draw vertical lines
+        for (let x = 0; x <= gridSettings.cols; x++) {
+            const lineX = offsetX + (x * cellSize);
+            ctx.moveTo(lineX, offsetY);
+            ctx.lineTo(lineX, offsetY + totalGridHeight);
+        }
+        
+        // Draw horizontal lines
+        for (let y = 0; y <= gridSettings.rows; y++) {
+            const lineY = offsetY + (y * cellSize);
+            ctx.moveTo(offsetX, lineY);
+            ctx.lineTo(offsetX + totalGridWidth, lineY);
+        }
+        
+        ctx.stroke();
     }
 }
 
@@ -261,8 +270,16 @@ function getCellCoordinates(event) {
     
     // Handle both mouse and touch events
     if (event.type.includes('touch')) {
-        clientX = event.touches[0].clientX;
-        clientY = event.touches[0].clientY;
+        // Prevent default to avoid scrolling/zooming on touch devices
+        event.preventDefault();
+        
+        // Get the first touch point
+        if (event.touches && event.touches.length > 0) {
+            clientX = event.touches[0].clientX;
+            clientY = event.touches[0].clientY;
+        } else {
+            return null; // No valid touch point
+        }
     } else {
         clientX = event.clientX;
         clientY = event.clientY;
@@ -286,6 +303,11 @@ function getCellCoordinates(event) {
     const gridX = Math.floor(canvasX / gridSettings.cellSize);
     const gridY = Math.floor(canvasY / gridSettings.cellSize);
     
+    // Validate grid coordinates are within bounds
+    if (gridX < 0 || gridX >= gridSettings.cols || gridY < 0 || gridY >= gridSettings.rows) {
+        return null; // Out of bounds
+    }
+    
     return { x: gridX, y: gridY };
 }
 
@@ -295,20 +317,41 @@ function handleCanvasInteraction(event) {
     event.preventDefault();
     
     const coords = getCellCoordinates(event);
-    toggleCell(coords.x, coords.y);
+    
+    // Only toggle if we have valid coordinates
+    if (coords) {
+        toggleCell(coords.x, coords.y);
+    }
 }
 
 // Setup event listeners for canvas interactions
 function setupCanvasInteractions() {
-    // Mouse events
+    // Mouse events for desktop
     canvas.addEventListener('mousedown', handleCanvasInteraction);
     
     // Touch events for mobile devices
     canvas.addEventListener('touchstart', handleCanvasInteraction, { passive: false });
     
+    // Additional touch event listeners to prevent unwanted behaviors
+    canvas.addEventListener('touchmove', (event) => {
+        // Prevent scrolling when interacting with canvas
+        event.preventDefault();
+    }, { passive: false });
+    
+    canvas.addEventListener('touchend', (event) => {
+        event.preventDefault();
+    }, { passive: false });
+    
     // Prevent context menu on right-click
     canvas.addEventListener('contextmenu', (event) => {
         event.preventDefault();
+    });
+    
+    // Handle window resize events to ensure canvas scales correctly
+    window.addEventListener('resize', () => {
+        // Recalculate canvas dimensions and redraw grid on window resize
+        calculateCanvasDimensions();
+        drawGrid();
     });
 }
 
@@ -493,19 +536,40 @@ function addBoundaryToggle() {
 
 // Main simulation loop using requestAnimationFrame
 function simulationLoop(timestamp) {
+    // Use performance.now() if available for more accurate timing
+    const currentTime = timestamp || performance.now();
+    
+    // Initialize lastFrameTime if it's the first frame
+    if (!lastFrameTime) lastFrameTime = currentTime;
+    
     // Calculate time since last frame
-    if (!lastFrameTime) lastFrameTime = timestamp;
-    const elapsed = timestamp - lastFrameTime;
+    const elapsed = currentTime - lastFrameTime;
+    
+    // Target frame interval based on simulation speed
+    const frameInterval = 1000 / simulationSpeed;
     
     // Check if it's time to update the simulation (based on simulation speed)
-    if (elapsed > (1000 / simulationSpeed)) {
-        stepSimulation();
-        lastFrameTime = timestamp;
+    if (elapsed >= frameInterval) {
+        // Calculate how many generations to step forward
+        // This allows catching up if the browser is struggling to maintain framerate
+        const stepsToTake = Math.min(Math.floor(elapsed / frameInterval), 3); // Cap at 3 steps to prevent freezing
+        
+        // Step the simulation (usually just once, but can catch up if lagging)
+        for (let i = 0; i < stepsToTake; i++) {
+            stepSimulation();
+        }
+        
+        // Update last frame time, accounting for any extra time
+        lastFrameTime = currentTime - (elapsed % frameInterval);
     }
     
     // Continue the loop if simulation is running
     if (isSimulationRunning) {
-        animationFrameId = requestAnimationFrame(simulationLoop);
+        // Use requestAnimationFrame with a polyfill fallback for older browsers
+        animationFrameId = (window.requestAnimationFrame || 
+                           window.webkitRequestAnimationFrame || 
+                           window.mozRequestAnimationFrame || 
+                           (callback => window.setTimeout(callback, 1000/60)))(simulationLoop);
     }
 }
 
@@ -897,8 +961,33 @@ function createPatternLibrary() {
     patternsDiv.appendChild(galleryContainer);
 }
 
-// Update the init function to include the pattern library
+// Update the init function to include the pattern library and device detection
 function init() {
+    // Detect mobile devices
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Add a class to the body to help with CSS-specific adjustments
+    document.body.classList.toggle('mobile-device', isMobile);
+    
+    // Set a smaller default grid size for mobile devices to improve performance
+    if (isMobile && gridSettings.rows > 30) {
+        gridSettings.rows = 30;
+        gridSettings.cols = 30;
+    }
+    
+    // Initialize canvas with proper pixel ratio for high-DPI displays
+    const pixelRatio = window.devicePixelRatio || 1;
+    if (pixelRatio > 1) {
+        const canvas = document.getElementById('game-canvas');
+        canvas.style.width = canvas.width + 'px';
+        canvas.style.height = canvas.height + 'px';
+        canvas.width = canvas.width * pixelRatio;
+        canvas.height = canvas.height * pixelRatio;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(pixelRatio, pixelRatio);
+    }
+    
+    // Initialize the simulation
     calculateCanvasDimensions();
     initializeGrid();
     drawGrid();
@@ -908,6 +997,13 @@ function init() {
     createAnalyticsDisplay();
     createPatternLibrary();
     setupCanvasInteractions();
+    
+    // Add window resize handler for responsive behavior
+    window.addEventListener('resize', () => {
+        // Recalculate dimensions and redraw
+        calculateCanvasDimensions();
+        drawGrid();
+    });
 }
 
 // Removing the existing init function call to avoid duplication

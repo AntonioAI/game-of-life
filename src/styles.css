@@ -407,3 +407,95 @@ footer {
     color: white !important;
     font-weight: bold;
 }
+
+/* Pattern Library Styling */
+.pattern-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    max-height: 550px;
+    overflow-y: auto;
+    padding-right: var(--spacing-sm);
+}
+
+.pattern-category {
+    margin-bottom: var(--spacing-md);
+}
+
+.pattern-category h3 {
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+    margin-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-xs);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.patterns-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.pattern-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-xs);
+    background-color: var(--background-color);
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.pattern-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+}
+
+.pattern-card canvas {
+    margin-bottom: var(--spacing-xs);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+}
+
+.pattern-name {
+    font-size: 0.8rem;
+    text-align: center;
+    color: var(--text-secondary);
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 var(--spacing-xs);
+}
+
+/* Media queries for pattern library */
+@media screen and (max-width: 767px) {
+    .patterns-grid {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    }
+    
+    .pattern-gallery {
+        max-height: 350px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .patterns-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: var(--spacing-sm);
+    }
+    
+    .pattern-card canvas {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .pattern-name {
+        font-size: 0.7rem;
+    }
+}

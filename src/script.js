@@ -30,6 +30,143 @@ let lastFrameTime = 0;
 let simulationSpeed = 10; // Frames per second
 let generationCount = 0;
 
+// Pattern definitions for the library
+const patternLibrary = {
+    // Still Lifes
+    'block': {
+        name: 'Block',
+        category: 'Still Life',
+        description: 'A 2×2 square that remains stable',
+        pattern: [
+            [1, 1],
+            [1, 1]
+        ]
+    },
+    'beehive': {
+        name: 'Beehive',
+        category: 'Still Life',
+        description: 'A 6-cell pattern that remains stable',
+        pattern: [
+            [0, 1, 1, 0],
+            [1, 0, 0, 1],
+            [0, 1, 1, 0]
+        ]
+    },
+    'boat': {
+        name: 'Boat',
+        category: 'Still Life',
+        description: 'A 5-cell stable pattern',
+        pattern: [
+            [1, 1, 0],
+            [1, 0, 1],
+            [0, 1, 0]
+        ]
+    },
+    'loaf': {
+        name: 'Loaf',
+        category: 'Still Life',
+        description: 'A 7-cell stable pattern',
+        pattern: [
+            [0, 1, 1, 0],
+            [1, 0, 0, 1],
+            [0, 1, 0, 1],
+            [0, 0, 1, 0]
+        ]
+    },
+    
+    // Oscillators
+    'blinker': {
+        name: 'Blinker',
+        category: 'Oscillator',
+        description: 'A period 2 oscillator that alternates between horizontal and vertical',
+        pattern: [
+            [1],
+            [1],
+            [1]
+        ]
+    },
+    'toad': {
+        name: 'Toad',
+        category: 'Oscillator',
+        description: 'A period 2 oscillator with 6 cells',
+        pattern: [
+            [0, 1, 1, 1],
+            [1, 1, 1, 0]
+        ]
+    },
+    'pulsar': {
+        name: 'Pulsar',
+        category: 'Oscillator',
+        description: 'A period 3 oscillator with 48 cells',
+        pattern: [
+            [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+            [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0],
+            [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0]
+        ]
+    },
+    
+    // Spaceships
+    'glider': {
+        name: 'Glider',
+        category: 'Spaceship',
+        description: 'A small spaceship that moves diagonally',
+        pattern: [
+            [0, 1, 0],
+            [0, 0, 1],
+            [1, 1, 1]
+        ]
+    },
+    'lwss': {
+        name: 'Lightweight Spaceship',
+        category: 'Spaceship',
+        description: 'A small spaceship that moves horizontally',
+        pattern: [
+            [0, 1, 0, 0, 1],
+            [1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 0]
+        ]
+    },
+    
+    // Growth Patterns
+    'rpentomino': {
+        name: 'R-Pentomino',
+        category: 'Growth',
+        description: 'A small pattern that grows chaotically',
+        pattern: [
+            [0, 1, 1],
+            [1, 1, 0],
+            [0, 1, 0]
+        ]
+    },
+    'gosperglidergun': {
+        name: 'Gosper Glider Gun',
+        category: 'Growth',
+        description: 'A pattern that continuously creates gliders',
+        pattern: [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+    }
+};
+
 // Initialize the grid with all cells dead (0)
 function initializeGrid() {
     grid = [];
@@ -499,24 +636,8 @@ function createTestPattern() {
     // Clear the grid first
     initializeGrid();
     
-    // Create a glider pattern:
-    //   O
-    //    O
-    //  OOO
-    
-    // Using coordinates relative to the center of the grid
-    const centerX = Math.floor(gridSettings.cols / 2);
-    const centerY = Math.floor(gridSettings.rows / 2);
-    
-    // Set the glider cells to alive
-    grid[centerY-1][centerX] = 1;     // Top middle
-    grid[centerY][centerX+1] = 1;     // Middle right
-    grid[centerY+1][centerX-1] = 1;   // Bottom left
-    grid[centerY+1][centerX] = 1;     // Bottom middle
-    grid[centerY+1][centerX+1] = 1;   // Bottom right
-    
-    // Redraw the grid
-    drawGrid();
+    // Place a glider pattern from the pattern library
+    placePatternInCenter('glider');
 }
 
 // Update the simulation controls
@@ -590,7 +711,193 @@ function createSimulationControls() {
     });
 }
 
-// Update the init function to include analytics display
+// Render a pattern on a small canvas for the thumbnail
+function createPatternThumbnail(patternId, width = 80, height = 80) {
+    const patternData = patternLibrary[patternId];
+    if (!patternData) return null;
+    
+    const pattern = patternData.pattern;
+    
+    // Create a small canvas for the thumbnail
+    const thumbnailCanvas = document.createElement('canvas');
+    thumbnailCanvas.width = width;
+    thumbnailCanvas.height = height;
+    const thumbnailCtx = thumbnailCanvas.getContext('2d');
+    
+    // Clear thumbnail canvas
+    thumbnailCtx.fillStyle = '#ffffff';
+    thumbnailCtx.fillRect(0, 0, width, height);
+    
+    // Calculate cell size based on pattern dimensions
+    const patternWidth = pattern[0].length;
+    const patternHeight = pattern.length;
+    const cellSize = Math.min(
+        Math.floor((width - 10) / patternWidth),
+        Math.floor((height - 10) / patternHeight)
+    );
+    
+    // Calculate offset to center the pattern
+    const offsetX = Math.floor((width - (patternWidth * cellSize)) / 2);
+    const offsetY = Math.floor((height - (patternHeight * cellSize)) / 2);
+    
+    // Draw the pattern
+    thumbnailCtx.fillStyle = '#000000';
+    for (let y = 0; y < patternHeight; y++) {
+        for (let x = 0; x < patternWidth; x++) {
+            if (pattern[y][x]) {
+                thumbnailCtx.fillRect(
+                    offsetX + (x * cellSize),
+                    offsetY + (y * cellSize),
+                    cellSize,
+                    cellSize
+                );
+            }
+        }
+    }
+    
+    // Draw a grid (optional for visual clarity)
+    thumbnailCtx.strokeStyle = '#dddddd';
+    for (let y = 0; y <= patternHeight; y++) {
+        thumbnailCtx.beginPath();
+        thumbnailCtx.moveTo(offsetX, offsetY + (y * cellSize));
+        thumbnailCtx.lineTo(offsetX + (patternWidth * cellSize), offsetY + (y * cellSize));
+        thumbnailCtx.stroke();
+    }
+    
+    for (let x = 0; x <= patternWidth; x++) {
+        thumbnailCtx.beginPath();
+        thumbnailCtx.moveTo(offsetX + (x * cellSize), offsetY);
+        thumbnailCtx.lineTo(offsetX + (x * cellSize), offsetY + (patternHeight * cellSize));
+        thumbnailCtx.stroke();
+    }
+    
+    return thumbnailCanvas;
+}
+
+// Place a pattern on the grid at the specified position
+function placePattern(patternId, x, y) {
+    const patternData = patternLibrary[patternId];
+    if (!patternData) return;
+    
+    const pattern = patternData.pattern;
+    const patternHeight = pattern.length;
+    const patternWidth = pattern[0].length;
+    
+    // Check if pattern fits within grid bounds
+    if (x < 0 || y < 0 || x + patternWidth > gridSettings.cols || y + patternHeight > gridSettings.rows) {
+        console.warn('Pattern would be placed outside grid bounds');
+        return;
+    }
+    
+    // Place the pattern on the grid
+    for (let patternY = 0; patternY < patternHeight; patternY++) {
+        for (let patternX = 0; patternX < patternWidth; patternX++) {
+            if (pattern[patternY][patternX]) {
+                grid[y + patternY][x + patternX] = 1;
+            }
+        }
+    }
+    
+    // Redraw the grid
+    drawGrid();
+    updateAnalytics();
+}
+
+// Place a pattern in the center of the grid
+function placePatternInCenter(patternId) {
+    const patternData = patternLibrary[patternId];
+    if (!patternData) return;
+    
+    const pattern = patternData.pattern;
+    const patternHeight = pattern.length;
+    const patternWidth = pattern[0].length;
+    
+    // Calculate center coordinates
+    const centerX = Math.floor((gridSettings.cols - patternWidth) / 2);
+    const centerY = Math.floor((gridSettings.rows - patternHeight) / 2);
+    
+    // Place the pattern
+    placePattern(patternId, centerX, centerY);
+}
+
+// Create the pattern library UI
+function createPatternLibrary() {
+    const patternsDiv = document.querySelector('.patterns');
+    patternsDiv.innerHTML = '<h2>Pattern Library</h2>';
+    
+    // Create categories for organization
+    const categories = {
+        'Still Life': [],
+        'Oscillator': [],
+        'Spaceship': [],
+        'Growth': []
+    };
+    
+    // Organize patterns by category
+    for (const patternId in patternLibrary) {
+        const pattern = patternLibrary[patternId];
+        if (categories[pattern.category]) {
+            categories[pattern.category].push(patternId);
+        }
+    }
+    
+    // Create the gallery grid container
+    const galleryContainer = document.createElement('div');
+    galleryContainer.className = 'pattern-gallery';
+    
+    // Create section for each category
+    for (const category in categories) {
+        if (categories[category].length === 0) continue;
+        
+        const categorySection = document.createElement('div');
+        categorySection.className = 'pattern-category';
+        
+        const categoryHeader = document.createElement('h3');
+        categoryHeader.textContent = category;
+        categorySection.appendChild(categoryHeader);
+        
+        const patternsGrid = document.createElement('div');
+        patternsGrid.className = 'patterns-grid';
+        
+        // Add each pattern in this category
+        categories[category].forEach(patternId => {
+            const pattern = patternLibrary[patternId];
+            
+            const patternCard = document.createElement('div');
+            patternCard.className = 'pattern-card';
+            patternCard.dataset.pattern = patternId;
+            
+            // Create thumbnail
+            const thumbnail = createPatternThumbnail(patternId);
+            if (thumbnail) {
+                patternCard.appendChild(thumbnail);
+            }
+            
+            // Pattern name
+            const patternName = document.createElement('div');
+            patternName.className = 'pattern-name';
+            patternName.textContent = pattern.name;
+            patternCard.appendChild(patternName);
+            
+            // Add tooltip with description
+            patternCard.title = pattern.description;
+            
+            // Add click handler to place the pattern
+            patternCard.addEventListener('click', () => {
+                placePatternInCenter(patternId);
+            });
+            
+            patternsGrid.appendChild(patternCard);
+        });
+        
+        categorySection.appendChild(patternsGrid);
+        galleryContainer.appendChild(categorySection);
+    }
+    
+    patternsDiv.appendChild(galleryContainer);
+}
+
+// Update the init function to include the pattern library
 function init() {
     calculateCanvasDimensions();
     initializeGrid();
@@ -599,6 +906,7 @@ function init() {
     addBoundaryToggle();
     createSimulationControls();
     createAnalyticsDisplay();
+    createPatternLibrary();
     setupCanvasInteractions();
 }
 

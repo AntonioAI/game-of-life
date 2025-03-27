@@ -1,3 +1,11 @@
+/**
+ * Game of Life Simulator
+ * Copyright (c) 2025 Antonio Innocente
+ * 
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 /*
  * Game of Life Simulator - Main Script
  * Implementation of Step 3.1 - Set Up the Canvas Element

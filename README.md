@@ -33,3 +33,15 @@ This project is under active development following the implementation plan in th
 ## License
 
 MIT 
+
+## Author
+
+This Game of Life Simulator was built by Antonio Innocente.
+
+## Attribution
+
+If you use, modify, or distribute this project, please maintain the above copyright and attribution notices. While the MIT license allows for modifications and commercial use, proper attribution to the original author is required. 
+
+## Monetization
+
+This project is provided under the MIT license and may be hosted as a public website with monetization features such as advertisements or premium features. If you fork or redistribute this project, you must maintain the original copyright notices and license terms. The original author (Antonio Innocente) reserves the right to monetize official hosted versions of this application. 

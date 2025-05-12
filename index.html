@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game of Life Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Basic Reset and Font */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a202c; /* Tailwind gray-900 */
+            color: #e2e8f0; /* Tailwind slate-200 */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden; /* Prevent horizontal scroll on main body */
+        }
+
+        /* Main layout: Sidebar and Content Area */
+        .app-container {
+            display: flex;
+            flex-direction: column; /* Stack sidebar above content on small screens */
+            flex-grow: 1;
+        }
+
+        @media (min-width: 768px) { /* md breakpoint */
+            .app-container {
+                flex-direction: row; /* Sidebar next to content on larger screens */
+            }
+        }
+
+        .sidebar {
+            width: 100%;
+            background-color: #2d3748; /* Tailwind gray-800 */
+            padding: 1rem;
+            overflow-y: auto;
+            border-bottom: 1px solid #4a5568; /* Tailwind gray-700 */
+        }
+
+        @media (min-width: 768px) { /* md breakpoint */
+            .sidebar {
+                width: 320px; /* Fixed width for sidebar */
+                min-width: 320px;
+                height: calc(100vh - 0px); /* Full viewport height minus potential header */
+                border-right: 1px solid #4a5568; /* Tailwind gray-700 */
+                border-bottom: none;
+            }
+        }
+        
+        .main-content {
+            flex-grow: 1;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* Prevent canvas from causing scrollbars on main content */
+        }
+
+        canvas {
+            display: block;
+            background-color: #000;
+            border: 1px solid #4a5568; /* Tailwind gray-700 */
+            max-width: 100%;
+            max-height: calc(100vh - 100px); /* Adjust based on surrounding elements */
+            aspect-ratio: 1 / 1; /* Maintain square aspect ratio if possible */
+            object-fit: contain; /* Ensure canvas scales within bounds */
+            border-radius: 0.5rem; /* rounded-lg */
+        }
+        
+        /* Panel Styling */
+        .panel {
+            background-color: #2d3748; /* Tailwind gray-800 */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #4a5568; /* Tailwind gray-700 */
+        }
+        .panel-title {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* font-semibold */
+            margin-bottom: 0.75rem;
+            color: #a0aec0; /* Tailwind gray-400 */
+        }
+
+        /* Button Styling */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            font-weight: 500; /* font-medium */
+            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            cursor: pointer;
+            border: 1px solid transparent;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+        }
+        .btn-primary {
+            background-color: #4299e1; /* Tailwind blue-500 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #3182ce; /* Tailwind blue-600 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+        }
+        .btn-secondary {
+            background-color: #4a5568; /* Tailwind gray-600 */
+            color: #e2e8f0; /* Tailwind slate-200 */
+        }
+        .btn-secondary:hover {
+            background-color: #2d3748; /* Tailwind gray-700 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+        }
+        .btn-icon {
+            padding: 0.5rem;
+        }
+
+        /* Input and Slider Styling */
+        input[type="range"], input[type="number"], input[type="color"], select {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: #1a202c; /* Tailwind gray-900 */
+            border: 1px solid #4a5568; /* Tailwind gray-700 */
+            color: #e2e8f0; /* Tailwind slate-200 */
+            margin-top: 0.25rem;
+            margin-bottom: 0.5rem;
+            box-sizing: border-box;
+        }
+        input[type="color"] {
+            height: 2.5rem; /* Specific height for color pickers */
+            padding: 0.25rem;
+        }
+        label {
+            display: block;
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 500; /* font-medium */
+            color: #a0aec0; /* Tailwind gray-400 */
+            margin-bottom: 0.25rem;
+        }
+
+        /* Analytics Panel Styling */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+        .analytics-item {
+            background-color: #1a202c; /* Tailwind gray-900 */
+            padding: 0.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+            font-size: 0.875rem; /* text-sm */
+        }
+        .analytics-label {
+            font-weight: 600; /* font-semibold */
+            color: #718096; /* Tailwind gray-500 */
+        }
+        .analytics-value {
+            color: #e2e8f0; /* Tailwind slate-200 */
+        }
+
+        /* Pattern Library Styling */
+        .pattern-search {
+            margin-bottom: 0.75rem;
+        }
+        .pattern-category-title {
+            font-weight: 600; /* font-semibold */
+            margin-top: 0.75rem;
+            margin-bottom: 0.5rem;
+            color: #a0aec0; /* Tailwind gray-400 */
+        }
+        .pattern-item {
+            background-color: #4a5568; /* Tailwind gray-600 */
+            padding: 0.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .pattern-item:hover {
+            background-color: #718096; /* Tailwind gray-500 */
+        }
+        .pattern-item.active {
+            background-color: #4299e1; /* Tailwind blue-500 */
+            color: white;
+        }
+
+        /* Message Box */
+        #messageBox {
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4299e1; /* Tailwind blue-500 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); /* shadow-lg */
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+            visibility: hidden;
+        }
+        #messageBox.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Utility classes */
+        .flex-wrap-gap > * { /* For wrapping flex items with gap */
+            margin: 0.25rem;
+        }
+
+        /* Scrollbar styling for a more modern look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d3748; /* Tailwind gray-800 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568; /* Tailwind gray-700 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #718096; /* Tailwind gray-500 */
+        }
+
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1 class="text-2xl font-bold text-white mb-6 text-center">Game of Life</h1>
+
+            <div id="controlsPanel" class="panel">
+                <h2 class="panel-title">Controls</h2>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button id="playPauseBtn" class="btn btn-primary col-span-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill mr-2" viewBox="0 0 16 16">
+                          <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                        </svg>
+                        Play
+                    </button>
+                    <button id="stepBtn" class="btn btn-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-skip-end-fill mr-2" viewBox="0 0 16 16">
+                          <path d="M12.5 4a.5.5 0 0 0-1 0v3.248L5.233 3.612C4.713 3.31 4 3.655 4 4.223v7.554c0 .568.713.913 1.233.612L11.5 8.752V12a.5.5 0 0 0 1 0V4z"/>
+                        </svg>
+                        Step
+                    </button>
+                    <button id="resetBtn" class="btn btn-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise mr-2" viewBox="0 0 16 16">
+                          <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                        </svg>
+                        Reset
+                    </button>
+                </div>
+                <div>
+                    <label for="speedRange">Speed: <span id="speedValue">10</span> FPS</label>
+                    <input type="range" id="speedRange" min="1" max="60" value="10" class="w-full">
+                </div>
+                <div class="mt-4">
+                    <label for="gridSizeSelect">Grid Size:</label>
+                    <select id="gridSizeSelect" class="w-full">
+                        <option value="20x20">20x20 (Small)</option>
+                        <option value="50x50" selected>50x50 (Medium)</option>
+                        <option value="75x75">75x75 (Large)</option>
+                        <option value="100x100">100x100 (X-Large)</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div id="customGridSizeContainer" class="mt-2 hidden">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="customRows">Rows (10-200):</label>
+                            <input type="number" id="customRows" min="10" max="200" value="50">
+                        </div>
+                        <div>
+                            <label for="customCols">Cols (10-200):</label>
+                            <input type="number" id="customCols" min="10" max="200" value="50">
+                        </div>
+                    </div>
+                     <button id="applyCustomSizeBtn" class="btn btn-secondary w-full mt-2">Apply Custom Size</button>
+                </div>
+                <div class="mt-4">
+                    <label for="boundaryTypeSelect">Boundary Type:</label>
+                    <select id="boundaryTypeSelect" class="w-full">
+                        <option value="toroidal" selected>Toroidal (Wrapping)</option>
+                        <option value="finite">Finite (Bounded)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="configPanel" class="panel">
+                <h2 class="panel-title">Configuration</h2>
+                <div>
+                    <label for="cellColorPicker">Cell Color:</label>
+                    <input type="color" id="cellColorPicker" value="#4299E1">
+                </div>
+                <div class="mt-2">
+                    <label for="gridLineColorPicker">Grid Line Color:</label>
+                    <input type="color" id="gridLineColorPicker" value="#4A5568">
+                </div>
+                <div class="mt-2">
+                    <label for="backgroundColorPicker">Background Color:</label>
+                    <input type="color" id="backgroundColorPicker" value="#000000">
+                </div>
+                <div class="mt-4">
+                    <label for="defaultSpeedRange">Default Speed: <span id="defaultSpeedValue">10</span> FPS</label>
+                    <input type="range" id="defaultSpeedRange" min="1" max="60" value="10" class="w-full">
+                </div>
+                <div class="mt-2">
+                     <label for="defaultGridSizeSelect">Default Grid Size:</label>
+                    <select id="defaultGridSizeSelect" class="w-full">
+                        <option value="20x20">20x20</option>
+                        <option value="50x50" selected>50x50</option>
+                        <option value="75x75">75x75</option>
+                        <option value="100x100">100x100</option>
+                    </select>
+                </div>
+                <div class="mt-2">
+                    <label for="defaultBoundaryTypeSelect">Default Boundary:</label>
+                    <select id="defaultBoundaryTypeSelect" class="w-full">
+                        <option value="toroidal" selected>Toroidal</option>
+                        <option value="finite">Finite</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-4">
+                    <button id="saveConfigBtn" class="btn btn-primary">Save Config</button>
+                    <button id="resetConfigBtn" class="btn btn-secondary">Reset Defaults</button>
+                </div>
+            </div>
+
+            <div id="analyticsPanel" class="panel">
+                <h2 class="panel-title">Analytics</h2>
+                <div class="analytics-grid">
+                    <div class="analytics-item"><span class="analytics-label">Generation:</span> <span id="generationCount" class="analytics-value">0</span></div>
+                    <div class="analytics-item"><span class="analytics-label">Live Cells:</span> <span id="liveCellCount" class="analytics-value">0</span></div>
+                    <div class="analytics-item"><span class="analytics-label">Population:</span> <span id="populationDensity" class="analytics-value">0.00%</span></div>
+                    <div class="analytics-item"><span class="analytics-label">Grid Size:</span> <span id="analyticsGridSize" class="analytics-value">50x50</span></div>
+                    <div class="analytics-item"><span class="analytics-label">Speed:</span> <span id="analyticsSpeed" class="analytics-value">10 FPS</span></div>
+                    <div class="analytics-item"><span class="analytics-label">Boundary:</span> <span id="analyticsBoundary" class="analytics-value">Toroidal</span></div>
+                </div>
+            </div>
+
+            <div id="patternLibraryPanel" class="panel">
+                <h2 class="panel-title">Pattern Library</h2>
+                <input type="text" id="patternSearch" placeholder="Search patterns..." class="pattern-search w-full">
+                <div id="patternsContainer" class="max-h-60 overflow-y-auto">
+                    </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <canvas id="gameCanvas"></canvas>
+        </main>
+    </div>
+
+    <div id="messageBox">This is a message!</div>
+
+    <script>
+        // --- Polyfills and Helpers ---
+        if (!Math.clamp) {
+            Math.clamp = function(value, min, max) {
+                return Math.min(Math.max(value, min), max);
+            };
+        }
+
+        // --- Global Namespace & Event Bus ---
+        const GOL = {}; // Game Of Life namespace
+
+        GOL.EventBus = {
+            events: {},
+            subscribe(eventName, fn) {
+                this.events[eventName] = this.events[eventName] || [];
+                this.events[eventName].push(fn);
+            },
+            unsubscribe(eventName, fn) {
+                if (this.events[eventName]) {
+                    this.events[eventName] = this.events[eventName].filter(func => func !== fn);
+                }
+            },
+            publish(eventName, data) {
+                if (this.events[eventName]) {
+                    this.events[eventName].forEach(fn => fn(data));
+                }
+            }
+        };
+
+        // --- Error Handler ---
+        GOL.ErrorHandler = {
+            handle(error, message = "An error occurred") {
+                console.error(message, error);
+                GOL.UIManager.showMessage(`${message}: ${error.message || error}`);
+            }
+        };
+
+        // --- Game Configuration (localStorage) ---
+        GOL.GameConfig = {
+            localStorageKey: 'gameOfLifeConfig',
+            defaults: {
+                cellColor: '#4299E1',
+                gridLineColor: '#4A5568',
+                backgroundColor: '#000000',
+                speed: 10,
+                gridSize: '50x50', // rowsxcol
+                boundaryType: 'toroidal', // 'toroidal' or 'finite'
+                // Default custom dimensions are not stored here, but taken from initial UI or last used.
+            },
+            current: {},
+
+            load() {
+                try {
+                    const storedConfig = localStorage.getItem(this.localStorageKey);
+                    if (storedConfig) {
+                        this.current = { ...this.defaults, ...JSON.parse(storedConfig) };
+                    } else {
+                        this.current = { ...this.defaults };
+                    }
+                } catch (error) {
+                    GOL.ErrorHandler.handle(error, "Failed to load configuration");
+                    this.current = { ...this.defaults };
+                }
+                GOL.EventBus.publish('configLoaded', this.current);
+                return this.current;
+            },
+
+            save(newConfig) {
+                try {
+                    this.current = { ...this.current, ...newConfig };
+                    localStorage.setItem(this.localStorageKey, JSON.stringify(this.current));
+                    GOL.EventBus.publish('configSaved', this.current);
+                    GOL.UIManager.showMessage("Configuration saved!");
+                } catch (error) {
+                    GOL.ErrorHandler.handle(error, "Failed to save configuration");
+                }
+            },
+
+            reset() {
+                this.current = { ...this.defaults };
+                this.save(this.current); // Save defaults to localStorage
+                GOL.EventBus.publish('configReset', this.current);
+                GOL.UIManager.showMessage("Configuration reset to defaults.");
+            },
+
+            get(key) {
+                return this.current[key] !== undefined ? this.current[key] : this.defaults[key];
+            }
+        };
+
+        // --- Grid Logic ---
+        GOL.Grid = {
+            rows: 50,
+            cols: 50,
+            grid: [],
+            boundaryType: 'toroidal', // 'toroidal' or 'finite'
+
+            init(rows, cols, boundaryType = 'toroidal') {
+                this.rows = rows;
+                this.cols = cols;
+                this.boundaryType = boundaryType;
+                this.grid = Array(this.rows).fill(null).map(() => Array(this.cols).fill(0));
+                GOL.EventBus.publish('gridInitialized', { rows: this.rows, cols: this.cols });
+            },
+
+            getCell(row, col) {
+                if (this.boundaryType === 'toroidal') {
+                    row = (row + this.rows) % this.rows;
+                    col = (col + this.cols) % this.cols;
+                } else { // finite
+                    if (row < 0 || row >= this.rows || col < 0 || col >= this.cols) {
+                        return 0; // Out of bounds is considered dead for finite grids
+                    }
+                }
+                return this.grid[row][col];
+            },
+
+            setCell(row, col, value) {
+                if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
+                    this.grid[row][col] = value;
+                }
+            },
+
+            toggleCell(row, col) {
+                if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
+                    this.grid[row][col] = this.grid[row][col] ? 0 : 1;
+                    GOL.EventBus.publish('cellToggled', { row, col, state: this.grid[row][col] });
+                    return this.grid[row][col];
+                }
+                return undefined;
+            },
+
+            countLiveNeighbors(row, col) {
+                let count = 0;
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        count += this.getCell(row + i, col + j);
+                    }
+                }
+                return count;
+            },
+
+            clear() {
+                this.grid = Array(this.rows).fill(null).map(() => Array(this.cols).fill(0));
+                GOL.EventBus.publish('gridCleared');
+            },
+
+            placePattern(pattern, startRow, startCol) {
+                pattern.forEach((row, rOffset) => {
+                    row.forEach((cell, cOffset) => {
+                        if (cell) {
+                            const targetRow = startRow + rOffset;
+                            const targetCol = startCol + cOffset;
+                            if (this.boundaryType === 'toroidal') {
+                                this.setCell((targetRow + this.rows) % this.rows, (targetCol + this.cols) % this.cols, 1);
+                            } else if (targetRow >= 0 && targetRow < this.rows && targetCol >= 0 && targetCol < this.cols) {
+                                this.setCell(targetRow, targetCol, 1);
+                            }
+                        }
+                    });
+                });
+                GOL.EventBus.publish('patternPlaced');
+            },
+
+            getLiveCellCount() {
+                return this.grid.flat().reduce((sum, cell) => sum + cell, 0);
+            }
+        };
+
+        // --- Game Rules (Conway's Game of Life) ---
+        GOL.Rules = {
+            apply(gridInstance) {
+                const newGrid = Array(gridInstance.rows).fill(null).map(() => Array(gridInstance.cols).fill(0));
+                let changed = false;
+                for (let r = 0; r < gridInstance.rows; r++) {
+                    for (let c = 0; c < gridInstance.cols; c++) {
+                        const liveNeighbors = gridInstance.countLiveNeighbors(r, c);
+                        const currentCellState = gridInstance.getCell(r, c);
+                        let nextCellState = currentCellState;
+
+                        if (currentCellState === 1) { // Alive cell
+                            if (liveNeighbors < 2 || liveNeighbors > 3) {
+                                nextCellState = 0; // Dies by underpopulation or overpopulation
+                            }
+                        } else { // Dead cell
+                            if (liveNeighbors === 3) {
+                                nextCellState = 1; // Becomes alive by reproduction
+                            }
+                        }
+                        newGrid[r][c] = nextCellState;
+                        if (currentCellState !== nextCellState) changed = true;
+                    }
+                }
+                gridInstance.grid = newGrid;
+                return changed; // Return true if any cell changed state
+            }
+        };
+
+        // --- Renderer (Canvas) ---
+        GOL.Renderer = {
+            canvas: null,
+            ctx: null,
+            cellSize: 10,
+            cellColor: '#4299E1',
+            gridLineColor: '#4A5568',
+            backgroundColor: '#000000',
+
+            init(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                if (!this.canvas) {
+                    GOL.ErrorHandler.handle(new Error(`Canvas with id "${canvasId}" not found.`));
+                    return false;
+                }
+                this.ctx = this.canvas.getContext('2d');
+                this.updateColorsFromConfig(GOL.GameConfig.current);
+                
+                GOL.EventBus.subscribe('configLoaded', (config) => this.updateColorsFromConfig(config));
+                GOL.EventBus.subscribe('configSaved', (config) => this.updateColorsFromConfig(config));
+                GOL.EventBus.subscribe('configReset', (config) => this.updateColorsFromConfig(config));
+
+                window.addEventListener('resize', () => this.resizeCanvas());
+                this.resizeCanvas(); // Initial size
+                return true;
+            },
+
+            updateColorsFromConfig(config) {
+                this.cellColor = config.cellColor || GOL.GameConfig.defaults.cellColor;
+                this.gridLineColor = config.gridLineColor || GOL.GameConfig.defaults.gridLineColor;
+                this.backgroundColor = config.backgroundColor || GOL.GameConfig.defaults.backgroundColor;
+                this.canvas.style.backgroundColor = this.backgroundColor; // For area around cells if canvas is larger
+                this.draw(GOL.Grid); // Redraw with new colors
+            },
+
+            resizeCanvas() {
+                const mainContent = document.querySelector('.main-content');
+                const sidebarWidth = document.querySelector('.sidebar').offsetWidth;
+                const availableWidth = window.innerWidth > 768 ? mainContent.offsetWidth : window.innerWidth - 32; // 32 for padding
+                const availableHeight = mainContent.offsetHeight - 32; // 32 for padding
+
+                const maxCanvasSize = Math.min(availableWidth, availableHeight);
+
+                this.canvas.width = maxCanvasSize;
+                this.canvas.height = maxCanvasSize;
+                
+                this.cellSize = Math.min(this.canvas.width / GOL.Grid.cols, this.canvas.height / GOL.Grid.rows);
+                this.draw(GOL.Grid);
+            },
+
+            draw(gridInstance) {
+                if (!this.ctx) return;
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw background (important if cells don't fill canvas or for transparency)
+                this.ctx.fillStyle = this.backgroundColor;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Calculate offsets to center the grid if cellSize * dimensions < canvas dimensions
+                const gridWidth = this.cellSize * gridInstance.cols;
+                const gridHeight = this.cellSize * gridInstance.rows;
+                const offsetX = (this.canvas.width - gridWidth) / 2;
+                const offsetY = (this.canvas.height - gridHeight) / 2;
+
+                for (let r = 0; r < gridInstance.rows; r++) {
+                    for (let c = 0; c < gridInstance.cols; c++) {
+                        // Draw grid lines
+                        this.ctx.strokeStyle = this.gridLineColor;
+                        this.ctx.strokeRect(offsetX + c * this.cellSize, offsetY + r * this.cellSize, this.cellSize, this.cellSize);
+
+                        if (gridInstance.getCell(r, c) === 1) {
+                            this.ctx.fillStyle = this.cellColor;
+                            this.ctx.fillRect(offsetX + c * this.cellSize, offsetY + r * this.cellSize, this.cellSize, this.cellSize);
+                        }
+                    }
+                }
+            },
+
+            getGridCoordinates(canvasX, canvasY) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = canvasX - rect.left;
+                const y = canvasY - rect.top;
+
+                const gridWidth = this.cellSize * GOL.Grid.cols;
+                const gridHeight = this.cellSize * GOL.Grid.rows;
+                const offsetX = (this.canvas.width - gridWidth) / 2;
+                const offsetY = (this.canvas.height - gridHeight) / 2;
+
+                if (x < offsetX || x > offsetX + gridWidth || y < offsetY || y > offsetY + gridHeight) {
+                    return null; // Click outside grid
+                }
+
+                const col = Math.floor((x - offsetX) / this.cellSize);
+                const row = Math.floor((y - offsetY) / this.cellSize);
+                return { row, col };
+            }
+        };
+
+        // --- Pattern Library ---
+        GOL.PatternLibrary = {
+            patterns: {
+                "Still Lifes": [
+                    { name: "Block", data: [[1,1],[1,1]] },
+                    { name: "Beehive", data: [[0,1,1,0],[1,0,0,1],[0,1,1,0]] },
+                    { name: "Loaf", data: [[0,1,1,0],[1,0,0,1],[0,1,0,1],[0,0,1,0]] },
+                    { name: "Boat", data: [[1,1,0],[1,0,1],[0,1,0]] },
+                ],
+                "Oscillators": [
+                    { name: "Blinker", data: [[1,1,1]] }, // (period 2)
+                    { name: "Toad", data: [[0,1,1,1],[1,1,1,0]] }, // (period 2)
+                    { name: "Pulsar", data: [ // (period 3)
+                        [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                    ]},
+                ],
+                "Spaceships": [
+                    { name: "Glider", data: [[0,1,0],[0,0,1],[1,1,1]] },
+                    { name: "Lightweight Spaceship (LWSS)", data: [
+                        [0,1,1,1,1],
+                        [1,0,0,0,1],
+                        [0,0,0,0,1],
+                        [1,0,0,1,0]
+                    ]},
+                ],
+                "Growth Patterns": [
+                     { name: "R-Pentomino", data: [[0,1,1],[1,1,0],[0,1,0]] },
+                     { name: "Gosper Glider Gun", data: [
+                        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                        [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                        [1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        [1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+                    ]}
+                ]
+            },
+            selectedPattern: null,
+
+            init(containerId, searchInputId) {
+                const container = document.getElementById(containerId);
+                const searchInput = document.getElementById(searchInputId);
+                if (!container || !searchInput) {
+                    GOL.ErrorHandler.handle(new Error("Pattern library container or search input not found."));
+                    return;
+                }
+
+                this.renderPatterns(container, this.patterns);
+
+                searchInput.addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    const filteredPatterns = {};
+                    for (const category in this.patterns) {
+                        const matching = this.patterns[category].filter(p => p.name.toLowerCase().includes(searchTerm));
+                        if (matching.length > 0) {
+                            filteredPatterns[category] = matching;
+                        }
+                    }
+                    this.renderPatterns(container, filteredPatterns);
+                });
+
+                container.addEventListener('click', (e) => {
+                    const patternItem = e.target.closest('.pattern-item');
+                    if (patternItem) {
+                        const category = patternItem.dataset.category;
+                        const patternName = patternItem.dataset.name;
+                        const patternData = this.patterns[category].find(p => p.name === patternName);
+                        
+                        // Deselect previous active item
+                        const activeItem = container.querySelector('.pattern-item.active');
+                        if (activeItem) activeItem.classList.remove('active');
+
+                        if (this.selectedPattern && this.selectedPattern.name === patternName) {
+                            this.selectedPattern = null; // Toggle off if same pattern clicked
+                            GOL.UIManager.showMessage("Pattern deselected. Click on grid to toggle cells.");
+                        } else {
+                            this.selectedPattern = patternData;
+                            patternItem.classList.add('active');
+                            GOL.UIManager.showMessage(`Pattern "${patternName}" selected. Click on grid to place.`);
+                        }
+                        GOL.EventBus.publish('patternSelected', this.selectedPattern);
+                    }
+                });
+            },
+
+            renderPatterns(container, patternsToRender) {
+                container.innerHTML = ''; // Clear existing patterns
+                for (const category in patternsToRender) {
+                    const categoryTitle = document.createElement('h3');
+                    categoryTitle.className = 'pattern-category-title';
+                    categoryTitle.textContent = category;
+                    container.appendChild(categoryTitle);
+
+                    patternsToRender[category].forEach(pattern => {
+                        const item = document.createElement('div');
+                        item.className = 'pattern-item';
+                        item.textContent = pattern.name;
+                        item.dataset.name = pattern.name;
+                        item.dataset.category = category;
+                        if (this.selectedPattern && this.selectedPattern.name === pattern.name) {
+                            item.classList.add('active');
+                        }
+                        container.appendChild(item);
+                    });
+                }
+            },
+
+            clearSelection() {
+                this.selectedPattern = null;
+                const container = document.getElementById('patternsContainer');
+                const activeItem = container.querySelector('.pattern-item.active');
+                if (activeItem) activeItem.classList.remove('active');
+                GOL.EventBus.publish('patternSelected', null);
+            }
+        };
+
+        // --- Animation Manager ---
+        GOL.AnimationManager = {
+            isRunning: false,
+            fps: 10,
+            lastFrameTime: 0,
+            animationFrameId: null,
+            generationCount: 0,
+
+            init(initialFps) {
+                this.setSpeed(initialFps);
+            },
+
+            start() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.lastFrameTime = performance.now();
+                    this.loop();
+                    GOL.EventBus.publish('simulationStarted');
+                }
+            },
+
+            stop() {
+                if (this.isRunning) {
+                    this.isRunning = false;
+                    if (this.animationFrameId) {
+                        cancelAnimationFrame(this.animationFrameId);
+                        this.animationFrameId = null;
+                    }
+                    GOL.EventBus.publish('simulationStopped');
+                }
+            },
+
+            step() { // Single step
+                if (this.isRunning) this.stop(); // Stop if running
+                this.generationCount++;
+                GOL.Rules.apply(GOL.Grid);
+                GOL.Renderer.draw(GOL.Grid);
+                GOL.EventBus.publish('simulationStepped', { generation: this.generationCount });
+            },
+
+            reset() {
+                this.stop();
+                this.generationCount = 0;
+                GOL.Grid.clear();
+                GOL.Renderer.draw(GOL.Grid);
+                GOL.EventBus.publish('simulationReset', { generation: this.generationCount });
+            },
+
+            setSpeed(newFps) {
+                this.fps = Math.clamp(newFps, 1, 60);
+                GOL.EventBus.publish('speedChanged', this.fps);
+            },
+
+            loop(timestamp) {
+                if (!this.isRunning) return;
+
+                this.animationFrameId = requestAnimationFrame((t) => this.loop(t));
+
+                const elapsed = timestamp - this.lastFrameTime;
+                const frameInterval = 1000 / this.fps;
+
+                if (elapsed > frameInterval) {
+                    this.lastFrameTime = timestamp - (elapsed % frameInterval);
+                    this.generationCount++;
+                    const changed = GOL.Rules.apply(GOL.Grid);
+                    GOL.Renderer.draw(GOL.Grid);
+                    GOL.EventBus.publish('simulationUpdated', { generation: this.generationCount, changed });
+                    // if (!changed && this.isRunning) { // Optional: auto-stop if stable
+                    //     this.stop();
+                    //     GOL.UIManager.showMessage("Simulation stable. Auto-paused.");
+                    // }
+                }
+            }
+        };
+
+        // --- UI Manager (coordinates UI elements and events) ---
+        GOL.UIManager = {
+            // DOM Elements (cached for performance)
+            playPauseBtn: null, stepBtn: null, resetBtn: null, speedRange: null, speedValue: null,
+            gridSizeSelect: null, customGridSizeContainer: null, customRows: null, customCols: null, applyCustomSizeBtn: null,
+            boundaryTypeSelect: null,
+            cellColorPicker: null, gridLineColorPicker: null, backgroundColorPicker: null,
+            defaultSpeedRange: null, defaultSpeedValue: null, defaultGridSizeSelect: null, defaultBoundaryTypeSelect: null,
+            saveConfigBtn: null, resetConfigBtn: null,
+            generationCountEl: null, liveCellCountEl: null, populationDensityEl: null,
+            analyticsGridSizeEl: null, analyticsSpeedEl: null, analyticsBoundaryEl: null,
+            messageBoxEl: null, messageTimeout: null,
+
+            init() {
+                // Cache DOM elements
+                this.playPauseBtn = document.getElementById('playPauseBtn');
+                this.stepBtn = document.getElementById('stepBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.speedRange = document.getElementById('speedRange');
+                this.speedValue = document.getElementById('speedValue');
+                this.gridSizeSelect = document.getElementById('gridSizeSelect');
+                this.customGridSizeContainer = document.getElementById('customGridSizeContainer');
+                this.customRows = document.getElementById('customRows');
+                this.customCols = document.getElementById('customCols');
+                this.applyCustomSizeBtn = document.getElementById('applyCustomSizeBtn');
+                this.boundaryTypeSelect = document.getElementById('boundaryTypeSelect');
+
+                this.cellColorPicker = document.getElementById('cellColorPicker');
+                this.gridLineColorPicker = document.getElementById('gridLineColorPicker');
+                this.backgroundColorPicker = document.getElementById('backgroundColorPicker');
+                this.defaultSpeedRange = document.getElementById('defaultSpeedRange');
+                this.defaultSpeedValue = document.getElementById('defaultSpeedValue');
+                this.defaultGridSizeSelect = document.getElementById('defaultGridSizeSelect');
+                this.defaultBoundaryTypeSelect = document.getElementById('defaultBoundaryTypeSelect');
+                this.saveConfigBtn = document.getElementById('saveConfigBtn');
+                this.resetConfigBtn = document.getElementById('resetConfigBtn');
+
+                this.generationCountEl = document.getElementById('generationCount');
+                this.liveCellCountEl = document.getElementById('liveCellCount');
+                this.populationDensityEl = document.getElementById('populationDensity');
+                this.analyticsGridSizeEl = document.getElementById('analyticsGridSize');
+                this.analyticsSpeedEl = document.getElementById('analyticsSpeed');
+                this.analyticsBoundaryEl = document.getElementById('analyticsBoundary');
+                
+                this.messageBoxEl = document.getElementById('messageBox');
+
+                // Initialize UI components
+                this.initControlsPanel();
+                this.initConfigPanel();
+                this.initAnalyticsPanel();
+                this.initCanvasInteraction();
+                GOL.PatternLibrary.init('patternsContainer', 'patternSearch');
+
+                // Load config and apply to UI
+                const config = GOL.GameConfig.load();
+                this.applyConfigToUI(config);
+                
+                // Apply initial grid settings from config or defaults
+                this.applyGridSettingsFromSelect(config.gridSize, config.boundaryType);
+            },
+
+            initControlsPanel() {
+                // Play/Pause
+                this.playPauseBtn.addEventListener('click', () => {
+                    if (GOL.AnimationManager.isRunning) {
+                        GOL.AnimationManager.stop();
+                    } else {
+                        GOL.AnimationManager.start();
+                    }
+                });
+
+                // Step
+                this.stepBtn.addEventListener('click', () => GOL.AnimationManager.step());
+
+                // Reset
+                this.resetBtn.addEventListener('click', () => {
+                    GOL.AnimationManager.reset();
+                    GOL.PatternLibrary.clearSelection(); // Clear pattern selection on reset
+                });
+
+                // Speed
+                this.speedRange.addEventListener('input', (e) => {
+                    const newSpeed = parseInt(e.target.value, 10);
+                    this.speedValue.textContent = newSpeed;
+                    GOL.AnimationManager.setSpeed(newSpeed);
+                    this.updateAnalytics({ speed: newSpeed });
+                });
+
+                // Grid Size Select
+                this.gridSizeSelect.addEventListener('change', (e) => {
+                    const selectedSize = e.target.value;
+                    if (selectedSize === 'custom') {
+                        this.customGridSizeContainer.classList.remove('hidden');
+                        // Set custom inputs to current grid dimensions initially
+                        this.customRows.value = GOL.Grid.rows;
+                        this.customCols.value = GOL.Grid.cols;
+                    } else {
+                        this.customGridSizeContainer.classList.add('hidden');
+                        this.applyGridSettingsFromSelect(selectedSize, this.boundaryTypeSelect.value);
+                    }
+                });
+                
+                // Apply Custom Grid Size
+                this.applyCustomSizeBtn.addEventListener('click', () => {
+                    const rows = Math.clamp(parseInt(this.customRows.value, 10), 10, 200);
+                    const cols = Math.clamp(parseInt(this.customCols.value, 10), 10, 200);
+                    this.customRows.value = rows; // Reflect clamped value
+                    this.customCols.value = cols;
+                    this.applyGridSettings(rows, cols, this.boundaryTypeSelect.value);
+                });
+
+                // Boundary Type
+                this.boundaryTypeSelect.addEventListener('change', (e) => {
+                    const newBoundaryType = e.target.value;
+                    GOL.Grid.boundaryType = newBoundaryType;
+                    this.updateAnalytics({ boundary: newBoundaryType });
+                    GOL.Renderer.draw(GOL.Grid); // Redraw if boundary affects rendering (it doesn't directly, but good practice)
+                });
+            },
+
+            applyGridSettingsFromSelect(sizeString, boundaryType) {
+                let rows, cols;
+                if (sizeString === 'custom') { // Should not happen here, but as a fallback
+                    rows = Math.clamp(parseInt(this.customRows.value, 10), 10, 200);
+                    cols = Math.clamp(parseInt(this.customCols.value, 10), 10, 200);
+                } else {
+                    [rows, cols] = sizeString.split('x').map(Number);
+                }
+                this.applyGridSettings(rows, cols, boundaryType);
+            },
+
+            applyGridSettings(rows, cols, boundaryType) {
+                GOL.AnimationManager.reset(); // Reset simulation when grid changes
+                GOL.Grid.init(rows, cols, boundaryType);
+                GOL.Renderer.resizeCanvas(); // This will also trigger a redraw
+                this.updateAnalytics({
+                    gridSize: `${rows}x${cols}`,
+                    boundary: boundaryType,
+                    generation: 0,
+                    liveCells: 0,
+                    population: 0
+                });
+                GOL.PatternLibrary.clearSelection();
+            },
+
+            initConfigPanel() {
+                // Color Pickers
+                this.cellColorPicker.addEventListener('input', (e) => GOL.Renderer.updateColorsFromConfig({ cellColor: e.target.value }));
+                this.gridLineColorPicker.addEventListener('input', (e) => GOL.Renderer.updateColorsFromConfig({ gridLineColor: e.target.value }));
+                this.backgroundColorPicker.addEventListener('input', (e) => GOL.Renderer.updateColorsFromConfig({ backgroundColor: e.target.value }));
+
+                // Default Speed
+                this.defaultSpeedRange.addEventListener('input', (e) => {
+                    this.defaultSpeedValue.textContent = e.target.value;
+                });
+
+                // Save Config
+                this.saveConfigBtn.addEventListener('click', () => {
+                    const newConfig = {
+                        cellColor: this.cellColorPicker.value,
+                        gridLineColor: this.gridLineColorPicker.value,
+                        backgroundColor: this.backgroundColorPicker.value,
+                        speed: parseInt(this.defaultSpeedRange.value, 10),
+                        gridSize: this.defaultGridSizeSelect.value,
+                        boundaryType: this.defaultBoundaryTypeSelect.value
+                    };
+                    GOL.GameConfig.save(newConfig);
+                });
+
+                // Reset Config
+                this.resetConfigBtn.addEventListener('click', () => {
+                    GOL.GameConfig.reset();
+                    // applyConfigToUI will be called by the event bus
+                });
+            },
+            
+            applyConfigToUI(config) {
+                // Controls Panel (reflect current operational values, some might be from config if it's initial load)
+                this.speedRange.value = config.speed;
+                this.speedValue.textContent = config.speed;
+                GOL.AnimationManager.setSpeed(config.speed); // Set operational speed
+
+                // Set grid size select. If custom, need to handle that.
+                // For simplicity, if loaded config.gridSize is not in presets, select 'custom' and fill inputs.
+                const currentGridSizeOption = Array.from(this.gridSizeSelect.options).find(opt => opt.value === config.gridSize);
+                if (currentGridSizeOption) {
+                    this.gridSizeSelect.value = config.gridSize;
+                    this.customGridSizeContainer.classList.add('hidden');
+                } else { // Custom size from config
+                    this.gridSizeSelect.value = 'custom';
+                    this.customGridSizeContainer.classList.remove('hidden');
+                    const [rows, cols] = config.gridSize.split('x').map(Number);
+                    this.customRows.value = rows || 50;
+                    this.customCols.value = cols || 50;
+                }
+                this.boundaryTypeSelect.value = config.boundaryType;
+
+                // Config Panel (reflects saved preferences)
+                this.cellColorPicker.value = config.cellColor;
+                this.gridLineColorPicker.value = config.gridLineColor;
+                this.backgroundColorPicker.value = config.backgroundColor;
+                this.defaultSpeedRange.value = config.speed;
+                this.defaultSpeedValue.textContent = config.speed;
+                this.defaultGridSizeSelect.value = config.gridSize;
+                this.defaultBoundaryTypeSelect.value = config.boundaryType;
+
+                // Apply colors to renderer immediately
+                GOL.Renderer.updateColorsFromConfig(config);
+                
+                // Initial grid setup based on loaded/default config
+                // This will be handled by the main init sequence calling applyGridSettingsFromSelect
+            },
+
+            initAnalyticsPanel() {
+                GOL.EventBus.subscribe('simulationStarted', () => this.updatePlayPauseButton(true));
+                GOL.EventBus.subscribe('simulationStopped', () => this.updatePlayPauseButton(false));
+                GOL.EventBus.subscribe('simulationUpdated', (data) => this.updateAnalytics({ generation: data.generation }));
+                GOL.EventBus.subscribe('simulationStepped', (data) => this.updateAnalytics({ generation: data.generation }));
+                GOL.EventBus.subscribe('simulationReset', (data) => this.updateAnalytics({ generation: data.generation, liveCells: 0, population: 0 }));
+                GOL.EventBus.subscribe('gridInitialized', (data) => this.updateAnalytics({ gridSize: `${data.rows}x${data.cols}` }));
+                GOL.EventBus.subscribe('speedChanged', (speed) => this.updateAnalytics({ speed: speed }));
+                GOL.EventBus.subscribe('cellToggled', () => this.updateAnalytics({})); // Recalculate live cells
+                GOL.EventBus.subscribe('patternPlaced', () => this.updateAnalytics({})); // Recalculate live cells
+                GOL.EventBus.subscribe('gridCleared', () => this.updateAnalytics({ liveCells: 0, population: 0 }));
+                GOL.EventBus.subscribe('configLoaded', (config) => this.updateAnalyticsFromConfig(config));
+                GOL.EventBus.subscribe('configSaved', (config) => this.updateAnalyticsFromConfig(config));
+                GOL.EventBus.subscribe('configReset', (config) => this.updateAnalyticsFromConfig(config));
+
+                // Initial update
+                this.updateAnalytics({});
+            },
+            
+            updateAnalyticsFromConfig(config) {
+                 this.updateAnalytics({
+                    speed: config.speed,
+                    gridSize: config.gridSize, // This might be string like "50x50" or "custom"
+                    boundary: config.boundaryType
+                });
+            },
+
+            updatePlayPauseButton(isPlaying) {
+                if (isPlaying) {
+                    this.playPauseBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pause-fill mr-2" viewBox="0 0 16 16">
+                          <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+                        </svg>
+                        Pause`;
+                    this.playPauseBtn.classList.replace('btn-primary', 'btn-secondary');
+                } else {
+                    this.playPauseBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill mr-2" viewBox="0 0 16 16">
+                          <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                        </svg>
+                        Play`;
+                    this.playPauseBtn.classList.replace('btn-secondary', 'btn-primary');
+                }
+            },
+
+            updateAnalytics(data) {
+                if (data.generation !== undefined) this.generationCountEl.textContent = data.generation;
+                
+                const liveCells = GOL.Grid.getLiveCellCount();
+                this.liveCellCountEl.textContent = liveCells;
+
+                const totalCells = GOL.Grid.rows * GOL.Grid.cols;
+                const density = totalCells > 0 ? (liveCells / totalCells * 100).toFixed(2) : 0;
+                this.populationDensityEl.textContent = `${density}%`;
+
+                if (data.gridSize !== undefined) this.analyticsGridSizeEl.textContent = data.gridSize;
+                else this.analyticsGridSizeEl.textContent = `${GOL.Grid.rows}x${GOL.Grid.cols}`;
+
+                if (data.speed !== undefined) this.analyticsSpeedEl.textContent = `${data.speed} FPS`;
+                else this.analyticsSpeedEl.textContent = `${GOL.AnimationManager.fps} FPS`;
+
+                if (data.boundary !== undefined) this.analyticsBoundaryEl.textContent = data.boundary.charAt(0).toUpperCase() + data.boundary.slice(1);
+                else this.analyticsBoundaryEl.textContent = GOL.Grid.boundaryType.charAt(0).toUpperCase() + GOL.Grid.boundaryType.slice(1);
+            },
+
+            initCanvasInteraction() {
+                GOL.Renderer.canvas.addEventListener('click', (e) => {
+                    const coords = GOL.Renderer.getGridCoordinates(e.clientX, e.clientY);
+                    if (coords) {
+                        if (GOL.PatternLibrary.selectedPattern) {
+                            // Calculate top-left for pattern based on its dimensions to center it roughly
+                            const patternData = GOL.PatternLibrary.selectedPattern.data;
+                            const patternRows = patternData.length;
+                            const patternCols = patternData[0] ? patternData[0].length : 0;
+                            const startRow = coords.row - Math.floor(patternRows / 2);
+                            const startCol = coords.col - Math.floor(patternCols / 2);
+                            
+                            GOL.Grid.placePattern(patternData, startRow, startCol);
+                            GOL.PatternLibrary.clearSelection(); // Deselect after placing
+                            this.showMessage("Pattern placed. Select another or click to toggle cells.");
+                        } else {
+                            GOL.Grid.toggleCell(coords.row, coords.col);
+                        }
+                        GOL.Renderer.draw(GOL.Grid); // Redraw immediately after interaction
+                        this.updateAnalytics({}); // Update live cell count etc.
+                    }
+                });
+            },
+            
+            showMessage(message, duration = 3000) {
+                if (this.messageTimeout) clearTimeout(this.messageTimeout);
+                this.messageBoxEl.textContent = message;
+                this.messageBoxEl.classList.add('show');
+                this.messageTimeout = setTimeout(() => {
+                    this.messageBoxEl.classList.remove('show');
+                }, duration);
+            }
+        };
+
+        // --- Main Application Initialization ---
+        GOL.App = {
+            init() {
+                try {
+                    GOL.GameConfig.load(); // Load config first
+                    if (!GOL.Renderer.init('gameCanvas')) return; // Renderer needs to be up for Grid init potentially
+                    
+                    // Initial grid setup based on loaded config (or defaults if no config)
+                    const initialConfig = GOL.GameConfig.current;
+                    let initialRows, initialCols;
+                    if (initialConfig.gridSize && initialConfig.gridSize !== 'custom') {
+                         [initialRows, initialCols] = initialConfig.gridSize.split('x').map(Number);
+                    } else { // Default to 50x50 if custom or invalid
+                        initialRows = 50;
+                        initialCols = 50;
+                        // If it was 'custom' but no specific dimensions in config, use defaults
+                        // GOL.UIManager will handle setting custom input fields if 'custom' is selected
+                    }
+
+                    GOL.Grid.init(initialRows, initialCols, initialConfig.boundaryType);
+                    GOL.AnimationManager.init(initialConfig.speed);
+                    GOL.UIManager.init(); // Initializes all UI components and listeners, applies config to UI
+                    
+                    // Place R-Pentomino by default as per README
+                    const rPentomino = GOL.PatternLibrary.patterns["Growth Patterns"].find(p => p.name === "R-Pentomino");
+                    if (rPentomino) {
+                        const startRow = Math.floor(GOL.Grid.rows / 2) - Math.floor(rPentomino.data.length / 2);
+                        const startCol = Math.floor(GOL.Grid.cols / 2) - Math.floor(rPentomino.data[0].length / 2);
+                        GOL.Grid.placePattern(rPentomino.data, startRow, startCol);
+                    }
+
+                    GOL.Renderer.draw(GOL.Grid); // Initial draw
+                    GOL.UIManager.updateAnalytics({}); // Initial analytics update
+                    
+                    console.log("Game of Life Simulator initialized successfully.");
+                    GOL.UIManager.showMessage("Welcome to the Game of Life Simulator!", 3000);
+
+                } catch (error) {
+                    GOL.ErrorHandler.handle(error, "Application initialization failed");
+                    // Display a more prominent error to the user if init fails catastrophically
+                    document.body.innerHTML = `<div style="color: red; padding: 20px; text-align: center; font-size: 1.2em;">
+                        <h1>Application Error</h1>
+                        <p>Could not initialize the Game of Life Simulator. Please check the console for details or try refreshing the page.</p>
+                        <p><em>${error.message || error}</em></p>
+                        </div>`;
+                }
+            }
+        };
+
+        // --- Start the application ---
+        window.onload = () => {
+            GOL.App.init();
+        };
+
+    </script>
+</body>
+</html>

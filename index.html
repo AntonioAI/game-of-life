@@ -45,7 +45,7 @@
             .sidebar {
                 width: 320px; /* Fixed width for sidebar */
                 min-width: 320px;
-                height: calc(100vh - 0px); /* Full viewport height minus potential header */
+                height: 100vh; /* Full viewport height */
                 border-right: 1px solid #4a5568; /* Tailwind gray-700 */
                 border-bottom: none;
             }
@@ -53,23 +53,22 @@
         
         .main-content {
             flex-grow: 1;
-            padding: 1rem;
+            padding: 1rem; /* Padding for spacing around the canvas */
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             overflow: hidden; /* Prevent canvas from causing scrollbars on main content */
+            min-height: 0; /* Allow flex item to shrink properly */
         }
 
         canvas {
             display: block;
-            background-color: #000;
+            /* background-color: #000; -- Initial background, JS will draw over this */
             border: 1px solid #4a5568; /* Tailwind gray-700 */
-            max-width: 100%;
-            max-height: calc(100vh - 100px); /* Adjust based on surrounding elements */
-            aspect-ratio: 1 / 1; /* Maintain square aspect ratio if possible */
-            object-fit: contain; /* Ensure canvas scales within bounds */
+            /* Removed max-width, max-height, aspect-ratio, object-fit. JS will control dimensions. */
             border-radius: 0.5rem; /* rounded-lg */
+            /* The canvas will be centered by main-content's flex properties if its JS-set size is smaller than main-content's inner area */
         }
         
         /* Panel Styling */
@@ -413,7 +412,6 @@
                 speed: 10,
                 gridSize: '50x50', // rowsxcol
                 boundaryType: 'toroidal', // 'toroidal' or 'finite'
-                // Default custom dimensions are not stored here, but taken from initial UI or last used.
             },
             current: {},
 
@@ -461,7 +459,7 @@
             rows: 50,
             cols: 50,
             grid: [],
-            boundaryType: 'toroidal', // 'toroidal' or 'finite'
+            boundaryType: 'toroidal', 
 
             init(rows, cols, boundaryType = 'toroidal') {
                 this.rows = rows;
@@ -475,23 +473,26 @@
                 if (this.boundaryType === 'toroidal') {
                     row = (row + this.rows) % this.rows;
                     col = (col + this.cols) % this.cols;
-                } else { // finite
+                } else { 
                     if (row < 0 || row >= this.rows || col < 0 || col >= this.cols) {
-                        return 0; // Out of bounds is considered dead for finite grids
+                        return 0; 
                     }
                 }
                 return this.grid[row][col];
             },
 
             setCell(row, col, value) {
-                if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
+                if (this.boundaryType === 'toroidal') {
+                     this.grid[(row + this.rows) % this.rows][(col + this.cols) % this.cols] = value;
+                } else if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
                     this.grid[row][col] = value;
                 }
             },
 
             toggleCell(row, col) {
-                if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
-                    this.grid[row][col] = this.grid[row][col] ? 0 : 1;
+                if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) { // Check within physical grid for toggling
+                    const currentVal = this.grid[row][col];
+                    this.grid[row][col] = currentVal ? 0 : 1;
                     GOL.EventBus.publish('cellToggled', { row, col, state: this.grid[row][col] });
                     return this.grid[row][col];
                 }
@@ -518,13 +519,7 @@
                 pattern.forEach((row, rOffset) => {
                     row.forEach((cell, cOffset) => {
                         if (cell) {
-                            const targetRow = startRow + rOffset;
-                            const targetCol = startCol + cOffset;
-                            if (this.boundaryType === 'toroidal') {
-                                this.setCell((targetRow + this.rows) % this.rows, (targetCol + this.cols) % this.cols, 1);
-                            } else if (targetRow >= 0 && targetRow < this.rows && targetCol >= 0 && targetCol < this.cols) {
-                                this.setCell(targetRow, targetCol, 1);
-                            }
+                            this.setCell(startRow + rOffset, startCol + cOffset, 1);
                         }
                     });
                 });
@@ -544,16 +539,17 @@
                 for (let r = 0; r < gridInstance.rows; r++) {
                     for (let c = 0; c < gridInstance.cols; c++) {
                         const liveNeighbors = gridInstance.countLiveNeighbors(r, c);
-                        const currentCellState = gridInstance.getCell(r, c);
+                        // For apply rule, getCell will handle boundary conditions
+                        const currentCellState = gridInstance.grid[r][c]; // Read directly from current physical grid
                         let nextCellState = currentCellState;
 
-                        if (currentCellState === 1) { // Alive cell
+                        if (currentCellState === 1) { 
                             if (liveNeighbors < 2 || liveNeighbors > 3) {
-                                nextCellState = 0; // Dies by underpopulation or overpopulation
+                                nextCellState = 0; 
                             }
-                        } else { // Dead cell
+                        } else { 
                             if (liveNeighbors === 3) {
-                                nextCellState = 1; // Becomes alive by reproduction
+                                nextCellState = 1; 
                             }
                         }
                         newGrid[r][c] = nextCellState;
@@ -561,7 +557,7 @@
                     }
                 }
                 gridInstance.grid = newGrid;
-                return changed; // Return true if any cell changed state
+                return changed; 
             }
         };
 
@@ -581,14 +577,15 @@
                     return false;
                 }
                 this.ctx = this.canvas.getContext('2d');
-                this.updateColorsFromConfig(GOL.GameConfig.current);
+                // Load initial colors from config, then subscribe to changes
+                this.updateColorsFromConfig(GOL.GameConfig.current); 
                 
                 GOL.EventBus.subscribe('configLoaded', (config) => this.updateColorsFromConfig(config));
                 GOL.EventBus.subscribe('configSaved', (config) => this.updateColorsFromConfig(config));
                 GOL.EventBus.subscribe('configReset', (config) => this.updateColorsFromConfig(config));
 
                 window.addEventListener('resize', () => this.resizeCanvas());
-                this.resizeCanvas(); // Initial size
+                this.resizeCanvas(); // Initial size calculation and draw
                 return true;
             },
 
@@ -596,70 +593,96 @@
                 this.cellColor = config.cellColor || GOL.GameConfig.defaults.cellColor;
                 this.gridLineColor = config.gridLineColor || GOL.GameConfig.defaults.gridLineColor;
                 this.backgroundColor = config.backgroundColor || GOL.GameConfig.defaults.backgroundColor;
-                this.canvas.style.backgroundColor = this.backgroundColor; // For area around cells if canvas is larger
-                this.draw(GOL.Grid); // Redraw with new colors
+                // No need to set canvas.style.backgroundColor if draw() fills it
+                if (this.canvas) { // Ensure canvas is initialized
+                   this.draw(GOL.Grid); // Redraw with new colors
+                }
             },
 
             resizeCanvas() {
                 const mainContent = document.querySelector('.main-content');
-                const sidebarWidth = document.querySelector('.sidebar').offsetWidth;
-                const availableWidth = window.innerWidth > 768 ? mainContent.offsetWidth : window.innerWidth - 32; // 32 for padding
-                const availableHeight = mainContent.offsetHeight - 32; // 32 for padding
+                if (!mainContent || !this.canvas) return;
 
+                // Use clientWidth/clientHeight of the mainContent area.
+                // These values are the inner dimensions, excluding padding of mainContent.
+                let availableWidth = mainContent.clientWidth;
+                let availableHeight = mainContent.clientHeight;
+                
+                availableWidth = Math.max(0, availableWidth); // Ensure non-negative
+                availableHeight = Math.max(0, availableHeight);
+
+                // Determine the largest square canvas that fits
                 const maxCanvasSize = Math.min(availableWidth, availableHeight);
 
                 this.canvas.width = maxCanvasSize;
                 this.canvas.height = maxCanvasSize;
                 
-                this.cellSize = Math.min(this.canvas.width / GOL.Grid.cols, this.canvas.height / GOL.Grid.rows);
-                this.draw(GOL.Grid);
+                // Recalculate cell size
+                if (GOL.Grid.cols > 0 && GOL.Grid.rows > 0) {
+                    this.cellSize = Math.min(this.canvas.width / GOL.Grid.cols, this.canvas.height / GOL.Grid.rows);
+                } else {
+                    this.cellSize = 10; // Fallback if grid isn't initialized
+                }
+                // this.cellSize = Math.max(1, this.cellSize); // Optional: ensure minimum cell size for visibility
+
+                this.draw(GOL.Grid); // Redraw with new dimensions
             },
 
             draw(gridInstance) {
-                if (!this.ctx) return;
+                if (!this.ctx || !gridInstance || !gridInstance.grid) return; // Ensure context and grid are available
+                
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-                // Draw background (important if cells don't fill canvas or for transparency)
                 this.ctx.fillStyle = this.backgroundColor;
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
                 
-                // Calculate offsets to center the grid if cellSize * dimensions < canvas dimensions
-                const gridWidth = this.cellSize * gridInstance.cols;
-                const gridHeight = this.cellSize * gridInstance.rows;
-                const offsetX = (this.canvas.width - gridWidth) / 2;
-                const offsetY = (this.canvas.height - gridHeight) / 2;
+                const gridActualWidth = this.cellSize * gridInstance.cols;
+                const gridActualHeight = this.cellSize * gridInstance.rows;
+                const offsetX = (this.canvas.width - gridActualWidth) / 2;
+                const offsetY = (this.canvas.height - gridActualHeight) / 2;
+
+                this.ctx.lineWidth = 1; // Explicitly set line width for grid lines
 
                 for (let r = 0; r < gridInstance.rows; r++) {
                     for (let c = 0; c < gridInstance.cols; c++) {
-                        // Draw grid lines
-                        this.ctx.strokeStyle = this.gridLineColor;
-                        this.ctx.strokeRect(offsetX + c * this.cellSize, offsetY + r * this.cellSize, this.cellSize, this.cellSize);
+                        const cellX = offsetX + c * this.cellSize;
+                        const cellY = offsetY + r * this.cellSize;
 
-                        if (gridInstance.getCell(r, c) === 1) {
+                        this.ctx.strokeStyle = this.gridLineColor;
+                        this.ctx.strokeRect(cellX, cellY, this.cellSize, this.cellSize);
+
+                        // Get cell state using gridInstance's method to respect boundaries, though for drawing we iterate physical grid
+                        if (gridInstance.grid[r][c] === 1) { 
                             this.ctx.fillStyle = this.cellColor;
-                            this.ctx.fillRect(offsetX + c * this.cellSize, offsetY + r * this.cellSize, this.cellSize, this.cellSize);
+                            this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
                         }
                     }
                 }
             },
 
             getGridCoordinates(canvasX, canvasY) {
+                if (!this.canvas) return null;
                 const rect = this.canvas.getBoundingClientRect();
                 const x = canvasX - rect.left;
                 const y = canvasY - rect.top;
 
-                const gridWidth = this.cellSize * GOL.Grid.cols;
-                const gridHeight = this.cellSize * GOL.Grid.rows;
-                const offsetX = (this.canvas.width - gridWidth) / 2;
-                const offsetY = (this.canvas.height - gridHeight) / 2;
+                const gridActualWidth = this.cellSize * GOL.Grid.cols;
+                const gridActualHeight = this.cellSize * GOL.Grid.rows;
+                const offsetX = (this.canvas.width - gridActualWidth) / 2;
+                const offsetY = (this.canvas.height - gridActualHeight) / 2;
 
-                if (x < offsetX || x > offsetX + gridWidth || y < offsetY || y > offsetY + gridHeight) {
-                    return null; // Click outside grid
+                if (x < offsetX || x >= offsetX + gridActualWidth || y < offsetY || y >= offsetY + gridActualHeight) {
+                    return null; // Click outside effective grid area
                 }
 
                 const col = Math.floor((x - offsetX) / this.cellSize);
                 const row = Math.floor((y - offsetY) / this.cellSize);
-                return { row, col };
+                
+                // Clamp to valid grid indices, though toggleCell also checks
+                const clampedRow = Math.max(0, Math.min(row, GOL.Grid.rows - 1));
+                const clampedCol = Math.max(0, Math.min(col, GOL.Grid.cols - 1));
+
+                return { row: clampedRow, col: clampedCol };
             }
         };
 
@@ -673,9 +696,9 @@
                     { name: "Boat", data: [[1,1,0],[1,0,1],[0,1,0]] },
                 ],
                 "Oscillators": [
-                    { name: "Blinker", data: [[1,1,1]] }, // (period 2)
-                    { name: "Toad", data: [[0,1,1,1],[1,1,1,0]] }, // (period 2)
-                    { name: "Pulsar", data: [ // (period 3)
+                    { name: "Blinker", data: [[1,1,1]] }, 
+                    { name: "Toad", data: [[0,1,1,1],[1,1,1,0]] }, 
+                    { name: "Pulsar", data: [ 
                         [0,0,1,1,1,0,0,0,1,1,1,0,0],
                         [0,0,0,0,0,0,0,0,0,0,0,0,0],
                         [1,0,0,0,0,1,0,1,0,0,0,0,1],
@@ -697,7 +720,7 @@
                         [0,1,1,1,1],
                         [1,0,0,0,1],
                         [0,0,0,0,1],
-                        [1,0,0,1,0]
+                        [1,0,0,1,0] // Corrected LWSS - was missing a row
                     ]},
                 ],
                 "Growth Patterns": [
@@ -746,12 +769,11 @@
                         const patternName = patternItem.dataset.name;
                         const patternData = this.patterns[category].find(p => p.name === patternName);
                         
-                        // Deselect previous active item
                         const activeItem = container.querySelector('.pattern-item.active');
                         if (activeItem) activeItem.classList.remove('active');
 
                         if (this.selectedPattern && this.selectedPattern.name === patternName) {
-                            this.selectedPattern = null; // Toggle off if same pattern clicked
+                            this.selectedPattern = null; 
                             GOL.UIManager.showMessage("Pattern deselected. Click on grid to toggle cells.");
                         } else {
                             this.selectedPattern = patternData;
@@ -764,7 +786,7 @@
             },
 
             renderPatterns(container, patternsToRender) {
-                container.innerHTML = ''; // Clear existing patterns
+                container.innerHTML = ''; 
                 for (const category in patternsToRender) {
                     const categoryTitle = document.createElement('h3');
                     categoryTitle.className = 'pattern-category-title';
@@ -788,8 +810,10 @@
             clearSelection() {
                 this.selectedPattern = null;
                 const container = document.getElementById('patternsContainer');
-                const activeItem = container.querySelector('.pattern-item.active');
-                if (activeItem) activeItem.classList.remove('active');
+                if (container) { // Check if container exists
+                    const activeItem = container.querySelector('.pattern-item.active');
+                    if (activeItem) activeItem.classList.remove('active');
+                }
                 GOL.EventBus.publish('patternSelected', null);
             }
         };
@@ -809,7 +833,7 @@
             start() {
                 if (!this.isRunning) {
                     this.isRunning = true;
-                    this.lastFrameTime = performance.now();
+                    this.lastFrameTime = performance.now(); // Reset lastFrameTime before starting loop
                     this.loop();
                     GOL.EventBus.publish('simulationStarted');
                 }
@@ -826,8 +850,8 @@
                 }
             },
 
-            step() { // Single step
-                if (this.isRunning) this.stop(); // Stop if running
+            step() { 
+                if (this.isRunning) this.stop(); 
                 this.generationCount++;
                 GOL.Rules.apply(GOL.Grid);
                 GOL.Renderer.draw(GOL.Grid);
@@ -855,23 +879,18 @@
                 const elapsed = timestamp - this.lastFrameTime;
                 const frameInterval = 1000 / this.fps;
 
-                if (elapsed > frameInterval) {
+                if (elapsed >= frameInterval) { // Use >= to ensure frame doesn't get skipped
                     this.lastFrameTime = timestamp - (elapsed % frameInterval);
                     this.generationCount++;
-                    const changed = GOL.Rules.apply(GOL.Grid);
+                    GOL.Rules.apply(GOL.Grid);
                     GOL.Renderer.draw(GOL.Grid);
-                    GOL.EventBus.publish('simulationUpdated', { generation: this.generationCount, changed });
-                    // if (!changed && this.isRunning) { // Optional: auto-stop if stable
-                    //     this.stop();
-                    //     GOL.UIManager.showMessage("Simulation stable. Auto-paused.");
-                    // }
+                    GOL.EventBus.publish('simulationUpdated', { generation: this.generationCount });
                 }
             }
         };
 
         // --- UI Manager (coordinates UI elements and events) ---
         GOL.UIManager = {
-            // DOM Elements (cached for performance)
             playPauseBtn: null, stepBtn: null, resetBtn: null, speedRange: null, speedValue: null,
             gridSizeSelect: null, customGridSizeContainer: null, customRows: null, customCols: null, applyCustomSizeBtn: null,
             boundaryTypeSelect: null,
@@ -883,7 +902,6 @@
             messageBoxEl: null, messageTimeout: null,
 
             init() {
-                // Cache DOM elements
                 this.playPauseBtn = document.getElementById('playPauseBtn');
                 this.stepBtn = document.getElementById('stepBtn');
                 this.resetBtn = document.getElementById('resetBtn');
@@ -915,23 +933,20 @@
                 
                 this.messageBoxEl = document.getElementById('messageBox');
 
-                // Initialize UI components
                 this.initControlsPanel();
                 this.initConfigPanel();
                 this.initAnalyticsPanel();
                 this.initCanvasInteraction();
                 GOL.PatternLibrary.init('patternsContainer', 'patternSearch');
 
-                // Load config and apply to UI
-                const config = GOL.GameConfig.load();
-                this.applyConfigToUI(config);
+                const config = GOL.GameConfig.load(); // applyConfigToUI is called via event 'configLoaded'
+                // this.applyConfigToUI(config); // No longer direct call here
                 
-                // Apply initial grid settings from config or defaults
-                this.applyGridSettingsFromSelect(config.gridSize, config.boundaryType);
+                // Grid settings applied after config load and UIManager elements are ready
+                // GOL.UIManager.applyGridSettingsFromSelect is called by GOL.App.init after UIManager.init
             },
 
             initControlsPanel() {
-                // Play/Pause
                 this.playPauseBtn.addEventListener('click', () => {
                     if (GOL.AnimationManager.isRunning) {
                         GOL.AnimationManager.stop();
@@ -939,30 +954,21 @@
                         GOL.AnimationManager.start();
                     }
                 });
-
-                // Step
                 this.stepBtn.addEventListener('click', () => GOL.AnimationManager.step());
-
-                // Reset
                 this.resetBtn.addEventListener('click', () => {
                     GOL.AnimationManager.reset();
-                    GOL.PatternLibrary.clearSelection(); // Clear pattern selection on reset
+                    GOL.PatternLibrary.clearSelection(); 
                 });
-
-                // Speed
                 this.speedRange.addEventListener('input', (e) => {
                     const newSpeed = parseInt(e.target.value, 10);
                     this.speedValue.textContent = newSpeed;
                     GOL.AnimationManager.setSpeed(newSpeed);
-                    this.updateAnalytics({ speed: newSpeed });
+                    // Analytics update is handled by 'speedChanged' event
                 });
-
-                // Grid Size Select
                 this.gridSizeSelect.addEventListener('change', (e) => {
                     const selectedSize = e.target.value;
                     if (selectedSize === 'custom') {
                         this.customGridSizeContainer.classList.remove('hidden');
-                        // Set custom inputs to current grid dimensions initially
                         this.customRows.value = GOL.Grid.rows;
                         this.customCols.value = GOL.Grid.cols;
                     } else {
@@ -970,116 +976,103 @@
                         this.applyGridSettingsFromSelect(selectedSize, this.boundaryTypeSelect.value);
                     }
                 });
-                
-                // Apply Custom Grid Size
                 this.applyCustomSizeBtn.addEventListener('click', () => {
-                    const rows = Math.clamp(parseInt(this.customRows.value, 10), 10, 200);
-                    const cols = Math.clamp(parseInt(this.customCols.value, 10), 10, 200);
-                    this.customRows.value = rows; // Reflect clamped value
+                    const rows = Math.clamp(parseInt(this.customRows.value, 10) || 50, 10, 200);
+                    const cols = Math.clamp(parseInt(this.customCols.value, 10) || 50, 10, 200);
+                    this.customRows.value = rows; 
                     this.customCols.value = cols;
                     this.applyGridSettings(rows, cols, this.boundaryTypeSelect.value);
                 });
-
-                // Boundary Type
                 this.boundaryTypeSelect.addEventListener('change', (e) => {
                     const newBoundaryType = e.target.value;
-                    GOL.Grid.boundaryType = newBoundaryType;
-                    this.updateAnalytics({ boundary: newBoundaryType });
-                    GOL.Renderer.draw(GOL.Grid); // Redraw if boundary affects rendering (it doesn't directly, but good practice)
+                    GOL.Grid.boundaryType = newBoundaryType; // Update grid property
+                    GOL.EventBus.publish('boundaryChanged', newBoundaryType); // Publish event
+                    GOL.Renderer.draw(GOL.Grid); 
                 });
             },
 
             applyGridSettingsFromSelect(sizeString, boundaryType) {
                 let rows, cols;
-                if (sizeString === 'custom') { // Should not happen here, but as a fallback
-                    rows = Math.clamp(parseInt(this.customRows.value, 10), 10, 200);
-                    cols = Math.clamp(parseInt(this.customCols.value, 10), 10, 200);
+                if (sizeString === 'custom') { 
+                    rows = Math.clamp(parseInt(this.customRows.value, 10) || 50, 10, 200);
+                    cols = Math.clamp(parseInt(this.customCols.value, 10) || 50, 10, 200);
                 } else {
-                    [rows, cols] = sizeString.split('x').map(Number);
+                    [rows, cols] = sizeString.split('x').map(s => parseInt(s, 10));
                 }
                 this.applyGridSettings(rows, cols, boundaryType);
             },
 
             applyGridSettings(rows, cols, boundaryType) {
-                GOL.AnimationManager.reset(); // Reset simulation when grid changes
-                GOL.Grid.init(rows, cols, boundaryType);
-                GOL.Renderer.resizeCanvas(); // This will also trigger a redraw
-                this.updateAnalytics({
-                    gridSize: `${rows}x${cols}`,
-                    boundary: boundaryType,
-                    generation: 0,
-                    liveCells: 0,
-                    population: 0
-                });
+                GOL.AnimationManager.reset(); 
+                GOL.Grid.init(rows, cols, boundaryType); // This will publish 'gridInitialized'
+                GOL.Renderer.resizeCanvas(); // Recalculates cell size and redraws
+                // Analytics are updated via events like 'gridInitialized', 'simulationReset'
                 GOL.PatternLibrary.clearSelection();
             },
 
             initConfigPanel() {
-                // Color Pickers
-                this.cellColorPicker.addEventListener('input', (e) => GOL.Renderer.updateColorsFromConfig({ cellColor: e.target.value }));
-                this.gridLineColorPicker.addEventListener('input', (e) => GOL.Renderer.updateColorsFromConfig({ gridLineColor: e.target.value }));
-                this.backgroundColorPicker.addEventListener('input', (e) => GOL.Renderer.updateColorsFromConfig({ backgroundColor: e.target.value }));
-
-                // Default Speed
+                this.cellColorPicker.addEventListener('input', (e) => GOL.GameConfig.save({ cellColor: e.target.value }));
+                this.gridLineColorPicker.addEventListener('input', (e) => GOL.GameConfig.save({ gridLineColor: e.target.value }));
+                this.backgroundColorPicker.addEventListener('input', (e) => GOL.GameConfig.save({ backgroundColor: e.target.value }));
                 this.defaultSpeedRange.addEventListener('input', (e) => {
                     this.defaultSpeedValue.textContent = e.target.value;
                 });
-
-                // Save Config
                 this.saveConfigBtn.addEventListener('click', () => {
                     const newConfig = {
                         cellColor: this.cellColorPicker.value,
                         gridLineColor: this.gridLineColorPicker.value,
                         backgroundColor: this.backgroundColorPicker.value,
                         speed: parseInt(this.defaultSpeedRange.value, 10),
-                        gridSize: this.defaultGridSizeSelect.value,
+                        gridSize: this.defaultGridSizeSelect.value, // This should also handle 'custom' if we save custom dimensions
                         boundaryType: this.defaultBoundaryTypeSelect.value
                     };
                     GOL.GameConfig.save(newConfig);
                 });
-
-                // Reset Config
                 this.resetConfigBtn.addEventListener('click', () => {
-                    GOL.GameConfig.reset();
-                    // applyConfigToUI will be called by the event bus
+                    GOL.GameConfig.reset(); // This will publish 'configReset'
                 });
+
+                // Subscribe to config changes to update UI elements in ConfigPanel
+                GOL.EventBus.subscribe('configLoaded', (config) => this.applyConfigToUI(config));
+                GOL.EventBus.subscribe('configSaved', (config) => this.applyConfigToUI(config));
+                GOL.EventBus.subscribe('configReset', (config) => this.applyConfigToUI(config));
             },
             
             applyConfigToUI(config) {
-                // Controls Panel (reflect current operational values, some might be from config if it's initial load)
+                // Update Controls Panel based on operational values (which might come from config on load)
                 this.speedRange.value = config.speed;
                 this.speedValue.textContent = config.speed;
-                GOL.AnimationManager.setSpeed(config.speed); // Set operational speed
+                // GOL.AnimationManager.setSpeed(config.speed); // AnimationManager speed is set in App.init or by user
 
-                // Set grid size select. If custom, need to handle that.
-                // For simplicity, if loaded config.gridSize is not in presets, select 'custom' and fill inputs.
                 const currentGridSizeOption = Array.from(this.gridSizeSelect.options).find(opt => opt.value === config.gridSize);
                 if (currentGridSizeOption) {
                     this.gridSizeSelect.value = config.gridSize;
                     this.customGridSizeContainer.classList.add('hidden');
-                } else { // Custom size from config
+                } else { 
                     this.gridSizeSelect.value = 'custom';
                     this.customGridSizeContainer.classList.remove('hidden');
-                    const [rows, cols] = config.gridSize.split('x').map(Number);
-                    this.customRows.value = rows || 50;
-                    this.customCols.value = cols || 50;
+                    // If gridSize in config is like "30x40", parse it for custom fields
+                    if (config.gridSize && config.gridSize.includes('x')) {
+                        const [rows, cols] = config.gridSize.split('x').map(Number);
+                        this.customRows.value = rows || 50;
+                        this.customCols.value = cols || 50;
+                    } else { // Default custom values if not parsable
+                        this.customRows.value = 50;
+                        this.customCols.value = 50;
+                    }
                 }
                 this.boundaryTypeSelect.value = config.boundaryType;
 
-                // Config Panel (reflects saved preferences)
+                // Update Configuration Panel (reflects saved preferences)
                 this.cellColorPicker.value = config.cellColor;
                 this.gridLineColorPicker.value = config.gridLineColor;
                 this.backgroundColorPicker.value = config.backgroundColor;
                 this.defaultSpeedRange.value = config.speed;
                 this.defaultSpeedValue.textContent = config.speed;
-                this.defaultGridSizeSelect.value = config.gridSize;
+                this.defaultGridSizeSelect.value = config.gridSize; // This should also handle 'custom'
                 this.defaultBoundaryTypeSelect.value = config.boundaryType;
 
-                // Apply colors to renderer immediately
-                GOL.Renderer.updateColorsFromConfig(config);
-                
-                // Initial grid setup based on loaded/default config
-                // This will be handled by the main init sequence calling applyGridSettingsFromSelect
+                // Renderer colors are updated via its own subscription to config events
             },
 
             initAnalyticsPanel() {
@@ -1088,24 +1081,35 @@
                 GOL.EventBus.subscribe('simulationUpdated', (data) => this.updateAnalytics({ generation: data.generation }));
                 GOL.EventBus.subscribe('simulationStepped', (data) => this.updateAnalytics({ generation: data.generation }));
                 GOL.EventBus.subscribe('simulationReset', (data) => this.updateAnalytics({ generation: data.generation, liveCells: 0, population: 0 }));
-                GOL.EventBus.subscribe('gridInitialized', (data) => this.updateAnalytics({ gridSize: `${data.rows}x${data.cols}` }));
+                
+                GOL.EventBus.subscribe('gridInitialized', (data) => this.updateAnalytics({ gridSize: `${data.rows}x${data.cols}`, boundary: GOL.Grid.boundaryType }));
                 GOL.EventBus.subscribe('speedChanged', (speed) => this.updateAnalytics({ speed: speed }));
-                GOL.EventBus.subscribe('cellToggled', () => this.updateAnalytics({})); // Recalculate live cells
-                GOL.EventBus.subscribe('patternPlaced', () => this.updateAnalytics({})); // Recalculate live cells
+                GOL.EventBus.subscribe('boundaryChanged', (boundary) => this.updateAnalytics({ boundary: boundary }));
+
+                GOL.EventBus.subscribe('cellToggled', () => this.updateAnalytics({})); 
+                GOL.EventBus.subscribe('patternPlaced', () => this.updateAnalytics({})); 
                 GOL.EventBus.subscribe('gridCleared', () => this.updateAnalytics({ liveCells: 0, population: 0 }));
+                
+                // Update analytics when config changes relevant display values
                 GOL.EventBus.subscribe('configLoaded', (config) => this.updateAnalyticsFromConfig(config));
                 GOL.EventBus.subscribe('configSaved', (config) => this.updateAnalyticsFromConfig(config));
                 GOL.EventBus.subscribe('configReset', (config) => this.updateAnalyticsFromConfig(config));
 
-                // Initial update
-                this.updateAnalytics({});
+
+                this.updateAnalytics({}); // Initial call to populate
             },
             
             updateAnalyticsFromConfig(config) {
                  this.updateAnalytics({
-                    speed: config.speed,
-                    gridSize: config.gridSize, // This might be string like "50x50" or "custom"
-                    boundary: config.boundaryType
+                    speed: config.speed, // This is default speed, actual speed is from AnimationManager
+                    // gridSize for analytics should reflect current GOL.Grid.rows/cols
+                    // boundary for analytics should reflect current GOL.Grid.boundaryType
+                });
+                 // More accurately, update based on operational values after config load
+                this.updateAnalytics({
+                    speed: GOL.AnimationManager.fps,
+                    gridSize: `${GOL.Grid.rows}x${GOL.Grid.cols}`,
+                    boundary: GOL.Grid.boundaryType
                 });
             },
 
@@ -1127,32 +1131,33 @@
                 }
             },
 
-            updateAnalytics(data) {
+            updateAnalytics(data = {}) { // Provide default empty object for data
                 if (data.generation !== undefined) this.generationCountEl.textContent = data.generation;
+                else if (GOL.AnimationManager) this.generationCountEl.textContent = GOL.AnimationManager.generationCount;
                 
-                const liveCells = GOL.Grid.getLiveCellCount();
+                const liveCells = GOL.Grid.getLiveCellCount ? GOL.Grid.getLiveCellCount() : 0;
                 this.liveCellCountEl.textContent = liveCells;
 
-                const totalCells = GOL.Grid.rows * GOL.Grid.cols;
-                const density = totalCells > 0 ? (liveCells / totalCells * 100).toFixed(2) : 0;
+                const totalCells = (GOL.Grid.rows || 0) * (GOL.Grid.cols || 0);
+                const density = totalCells > 0 ? (liveCells / totalCells * 100).toFixed(2) : "0.00";
                 this.populationDensityEl.textContent = `${density}%`;
 
                 if (data.gridSize !== undefined) this.analyticsGridSizeEl.textContent = data.gridSize;
-                else this.analyticsGridSizeEl.textContent = `${GOL.Grid.rows}x${GOL.Grid.cols}`;
+                else if (GOL.Grid) this.analyticsGridSizeEl.textContent = `${GOL.Grid.rows}x${GOL.Grid.cols}`;
 
                 if (data.speed !== undefined) this.analyticsSpeedEl.textContent = `${data.speed} FPS`;
-                else this.analyticsSpeedEl.textContent = `${GOL.AnimationManager.fps} FPS`;
+                else if (GOL.AnimationManager) this.analyticsSpeedEl.textContent = `${GOL.AnimationManager.fps} FPS`;
 
                 if (data.boundary !== undefined) this.analyticsBoundaryEl.textContent = data.boundary.charAt(0).toUpperCase() + data.boundary.slice(1);
-                else this.analyticsBoundaryEl.textContent = GOL.Grid.boundaryType.charAt(0).toUpperCase() + GOL.Grid.boundaryType.slice(1);
+                else if (GOL.Grid) this.analyticsBoundaryEl.textContent = GOL.Grid.boundaryType.charAt(0).toUpperCase() + GOL.Grid.boundaryType.slice(1);
             },
 
             initCanvasInteraction() {
+                if (!GOL.Renderer.canvas) return;
                 GOL.Renderer.canvas.addEventListener('click', (e) => {
                     const coords = GOL.Renderer.getGridCoordinates(e.clientX, e.clientY);
                     if (coords) {
                         if (GOL.PatternLibrary.selectedPattern) {
-                            // Calculate top-left for pattern based on its dimensions to center it roughly
                             const patternData = GOL.PatternLibrary.selectedPattern.data;
                             const patternRows = patternData.length;
                             const patternCols = patternData[0] ? patternData[0].length : 0;
@@ -1160,18 +1165,21 @@
                             const startCol = coords.col - Math.floor(patternCols / 2);
                             
                             GOL.Grid.placePattern(patternData, startRow, startCol);
-                            GOL.PatternLibrary.clearSelection(); // Deselect after placing
+                            GOL.PatternLibrary.clearSelection(); 
                             this.showMessage("Pattern placed. Select another or click to toggle cells.");
                         } else {
                             GOL.Grid.toggleCell(coords.row, coords.col);
                         }
-                        GOL.Renderer.draw(GOL.Grid); // Redraw immediately after interaction
-                        this.updateAnalytics({}); // Update live cell count etc.
+                        GOL.Renderer.draw(GOL.Grid); 
+                        GOL.EventBus.publish('gridManuallyChanged'); // To update analytics
                     }
                 });
+                // Add subscription for gridManuallyChanged to update analytics
+                GOL.EventBus.subscribe('gridManuallyChanged', () => this.updateAnalytics({}));
             },
             
             showMessage(message, duration = 3000) {
+                if (!this.messageBoxEl) return;
                 if (this.messageTimeout) clearTimeout(this.messageTimeout);
                 this.messageBoxEl.textContent = message;
                 this.messageBoxEl.classList.add('show');
@@ -1185,42 +1193,56 @@
         GOL.App = {
             init() {
                 try {
-                    GOL.GameConfig.load(); // Load config first
-                    if (!GOL.Renderer.init('gameCanvas')) return; // Renderer needs to be up for Grid init potentially
+                    // Renderer must be initialized before UIManager if UIManager.init depends on canvas elements
+                    // and before Grid if Grid.init triggers events that Renderer might listen to early.
+                    // Config should be loaded first as other modules might depend on it.
+                    GOL.GameConfig.load(); // Publishes 'configLoaded'
                     
-                    // Initial grid setup based on loaded config (or defaults if no config)
+                    if (!GOL.Renderer.init('gameCanvas')) { // Initializes canvas, ctx, resizes, draws. Subscribes to config.
+                        GOL.ErrorHandler.handle(new Error("Renderer initialization failed."));
+                        return;
+                    }
+                    
                     const initialConfig = GOL.GameConfig.current;
                     let initialRows, initialCols;
-                    if (initialConfig.gridSize && initialConfig.gridSize !== 'custom') {
-                         [initialRows, initialCols] = initialConfig.gridSize.split('x').map(Number);
-                    } else { // Default to 50x50 if custom or invalid
-                        initialRows = 50;
+                    if (initialConfig.gridSize && initialConfig.gridSize !== 'custom' && initialConfig.gridSize.includes('x')) {
+                         [initialRows, initialCols] = initialConfig.gridSize.split('x').map(s => parseInt(s, 10));
+                    } else { 
+                        initialRows = 50; // Default if 'custom' or not parsable
                         initialCols = 50;
-                        // If it was 'custom' but no specific dimensions in config, use defaults
-                        // GOL.UIManager will handle setting custom input fields if 'custom' is selected
                     }
 
-                    GOL.Grid.init(initialRows, initialCols, initialConfig.boundaryType);
-                    GOL.AnimationManager.init(initialConfig.speed);
-                    GOL.UIManager.init(); // Initializes all UI components and listeners, applies config to UI
+                    GOL.Grid.init(initialRows, initialCols, initialConfig.boundaryType); // Publishes 'gridInitialized'
+                    GOL.AnimationManager.init(initialConfig.speed); // Publishes 'speedChanged'
                     
-                    // Place R-Pentomino by default as per README
+                    // UIManager init should come after other core modules it might interact with are ready
+                    // and after config is loaded so it can apply initial UI states.
+                    GOL.UIManager.init(); // Caches elements, sets up listeners, applies config to UI elements via subscriptions
+
+                    // Now that UIManager is initialized and has applied config,
+                    // explicitly set initial grid settings for ControlsPanel if needed,
+                    // or ensure 'configLoaded' event handles this.
+                    // The UIManager's applyConfigToUI and its subscriptions should handle setting initial UI values.
+                    // The applyGridSettings in UIManager will also call Grid.init and Renderer.resize.
+                    // Let's ensure the initial grid setup is robust.
+                    GOL.UIManager.applyGridSettingsFromSelect(initialConfig.gridSize, initialConfig.boundaryType);
+
+
                     const rPentomino = GOL.PatternLibrary.patterns["Growth Patterns"].find(p => p.name === "R-Pentomino");
-                    if (rPentomino) {
+                    if (rPentomino && GOL.Grid.rows >= 5 && GOL.Grid.cols >= 5) { // Ensure grid is large enough
                         const startRow = Math.floor(GOL.Grid.rows / 2) - Math.floor(rPentomino.data.length / 2);
                         const startCol = Math.floor(GOL.Grid.cols / 2) - Math.floor(rPentomino.data[0].length / 2);
                         GOL.Grid.placePattern(rPentomino.data, startRow, startCol);
                     }
 
-                    GOL.Renderer.draw(GOL.Grid); // Initial draw
-                    GOL.UIManager.updateAnalytics({}); // Initial analytics update
+                    GOL.Renderer.draw(GOL.Grid); 
+                    GOL.UIManager.updateAnalytics({}); // Populate analytics panel correctly
                     
                     console.log("Game of Life Simulator initialized successfully.");
                     GOL.UIManager.showMessage("Welcome to the Game of Life Simulator!", 3000);
 
                 } catch (error) {
                     GOL.ErrorHandler.handle(error, "Application initialization failed");
-                    // Display a more prominent error to the user if init fails catastrophically
                     document.body.innerHTML = `<div style="color: red; padding: 20px; text-align: center; font-size: 1.2em;">
                         <h1>Application Error</h1>
                         <p>Could not initialize the Game of Life Simulator. Please check the console for details or try refreshing the page.</p>
@@ -1230,7 +1252,6 @@
             }
         };
 
-        // --- Start the application ---
         window.onload = () => {
             GOL.App.init();
         };

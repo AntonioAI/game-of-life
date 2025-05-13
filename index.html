@@ -634,8 +634,22 @@
                 const mainContent = document.querySelector('.main-content');
                 if (!mainContent || !this.canvas || !this.ctx) return;
 
-                let availableWidth = mainContent.clientWidth;
-                let availableHeight = mainContent.clientHeight;
+                // Use getBoundingClientRect for potentially more precise dimensions, then floor them.
+                const rect = mainContent.getBoundingClientRect();
+                let availableWidth = Math.floor(rect.width);
+                let availableHeight = Math.floor(rect.height);
+                
+                // Subtract padding of main-content if it's not already accounted for by clientWidth/Height
+                // For getBoundingClientRect, padding is included. We need the inner area.
+                // Let's get computed style to be sure.
+                const style = window.getComputedStyle(mainContent);
+                const paddingLeft = parseFloat(style.paddingLeft) || 0;
+                const paddingRight = parseFloat(style.paddingRight) || 0;
+                const paddingTop = parseFloat(style.paddingTop) || 0;
+                const paddingBottom = parseFloat(style.paddingBottom) || 0;
+
+                availableWidth = Math.floor(rect.width - paddingLeft - paddingRight);
+                availableHeight = Math.floor(rect.height - paddingTop - paddingBottom);
                 
                 availableWidth = Math.max(10, availableWidth); 
                 availableHeight = Math.max(10, availableHeight);
@@ -650,7 +664,7 @@
                 } else {
                     this.cellSize = 10; 
                 }
-                this.cellSize = Math.max(1, this.cellSize); 
+                this.cellSize = Math.max(1, this.cellSize); // Ensure cell size is at least 1px
 
                 this.draw(GOL.Grid); 
             },

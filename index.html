@@ -134,7 +134,6 @@
             color: #e2e8f0; /* Tailwind slate-200 */
             margin-top: 0.25rem;
             margin-bottom: 0.5rem;
-            /* box-sizing: border-box; Already handled globally */
         }
         input[type="color"] {
             height: 2.5rem; /* Specific height for color pickers */
@@ -616,7 +615,17 @@
                 const debouncedResize = debounce(() => this.resizeCanvas(), 250);
                 window.addEventListener('resize', debouncedResize);
                 
-                this.resizeCanvas(); 
+                // Add orientationchange listener for mobile devices
+                // Check if 'orientation' is in window and 'onorientationchange' is supported
+                if ('orientation' in window && 'onorientationchange' in window) {
+                    window.addEventListener('orientationchange', debouncedResize);
+                }
+                
+                // Delay the initial resize slightly to allow mobile browsers to settle layout
+                setTimeout(() => {
+                    this.resizeCanvas(); 
+                }, 150); // Increased delay slightly, can be adjusted
+                
                 return true;
             },
 
@@ -634,22 +643,15 @@
                 const mainContent = document.querySelector('.main-content');
                 if (!mainContent || !this.canvas || !this.ctx) return;
 
-                // Use getBoundingClientRect for potentially more precise dimensions, then floor them.
                 const rect = mainContent.getBoundingClientRect();
-                let availableWidth = Math.floor(rect.width);
-                let availableHeight = Math.floor(rect.height);
-                
-                // Subtract padding of main-content if it's not already accounted for by clientWidth/Height
-                // For getBoundingClientRect, padding is included. We need the inner area.
-                // Let's get computed style to be sure.
                 const style = window.getComputedStyle(mainContent);
                 const paddingLeft = parseFloat(style.paddingLeft) || 0;
                 const paddingRight = parseFloat(style.paddingRight) || 0;
                 const paddingTop = parseFloat(style.paddingTop) || 0;
                 const paddingBottom = parseFloat(style.paddingBottom) || 0;
 
-                availableWidth = Math.floor(rect.width - paddingLeft - paddingRight);
-                availableHeight = Math.floor(rect.height - paddingTop - paddingBottom);
+                let availableWidth = Math.floor(rect.width - paddingLeft - paddingRight);
+                let availableHeight = Math.floor(rect.height - paddingTop - paddingBottom);
                 
                 availableWidth = Math.max(10, availableWidth); 
                 availableHeight = Math.max(10, availableHeight);
@@ -664,7 +666,7 @@
                 } else {
                     this.cellSize = 10; 
                 }
-                this.cellSize = Math.max(1, this.cellSize); // Ensure cell size is at least 1px
+                this.cellSize = Math.max(1, this.cellSize); 
 
                 this.draw(GOL.Grid); 
             },
@@ -1219,6 +1221,7 @@
 
                     GOL.Grid.init(initialRows, initialCols, initialConfig.boundaryType); 
 
+                    // Renderer init now handles its own initial resize with a delay
                     if (!GOL.Renderer.init('gameCanvas')) { 
                         GOL.ErrorHandler.handle(new Error("Renderer initialization failed."));
                         return;
@@ -1229,7 +1232,15 @@
                     GOL.UIManager.init(); 
                     GOL.UIManager.applyConfigToUI(initialConfig); 
 
+                    // This call ensures UI reflects the grid size, and it also calls resizeCanvas.
+                    // The resizeCanvas in Renderer.init is now delayed, this one will also be affected by that if called too soon.
+                    // However, applyGridSettingsFromSelect itself calls GOL.Renderer.resizeCanvas()
+                    // Let's ensure this doesn't cause a double-quick resize.
+                    // The Renderer's own delayed initial resize should be sufficient.
+                    // We might not need to call applyGridSettingsFromSelect if applyConfigToUI and Renderer.init handle it.
+                    // For now, keeping it to ensure UI consistency, but the Renderer's delayed initial resize is key.
                     GOL.UIManager.applyGridSettingsFromSelect(initialConfig.gridSize, initialConfig.boundaryType);
+
 
                     const rPentominoPattern = GOL.PatternLibrary.patterns["Growth Patterns"].find(p => p.name === "R-Pentomino");
                     if (rPentominoPattern && rPentominoPattern.data && rPentominoPattern.data.length > 0 && rPentominoPattern.data[0]) {

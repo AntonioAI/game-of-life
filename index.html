@@ -414,7 +414,7 @@
             handle(error, message = "An error occurred") {
                 console.error(message, error);
                 if (GOL.UIManager && GOL.UIManager.showMessage) {
-                    GOL.UIManager.showMessage(`${message}: ${error.message || error}`);
+                    GOL.UIManager.showMessage(`${message}: ${error.message || String(error)}`);
                 }
             }
         };
@@ -453,7 +453,9 @@
                     this.current = { ...this.current, ...newConfig };
                     localStorage.setItem(this.localStorageKey, JSON.stringify(this.current));
                     GOL.EventBus.publish('configSaved', this.current);
-                    GOL.UIManager.showMessage("Configuration saved!");
+                    if (GOL.UIManager && GOL.UIManager.showMessage) { // Check UIManager availability
+                        GOL.UIManager.showMessage("Configuration saved!");
+                    }
                 } catch (error) {
                     GOL.ErrorHandler.handle(error, "Failed to save configuration");
                 }
@@ -463,7 +465,9 @@
                 this.current = { ...this.defaults };
                 this.save(this.current); 
                 GOL.EventBus.publish('configReset', this.current);
-                GOL.UIManager.showMessage("Configuration reset to defaults.");
+                 if (GOL.UIManager && GOL.UIManager.showMessage) { // Check UIManager availability
+                    GOL.UIManager.showMessage("Configuration reset to defaults.");
+                }
             },
 
             get(key) {
@@ -588,6 +592,97 @@
                 return changed; 
             }
         };
+        
+        // --- Viewport Change Handler (Inspired by ZoomDetector.js) ---
+        GOL.ViewportHandler = {
+            resizeCallback: null,
+            debounceTime: 250, // Time in ms to wait after the last event before calling the callback
+            lastDevicePixelRatio: 1,
+            eventDebounceTimeout: null,
+            isListening: false,
+            resizeObserver: null,
+            boundEventHandler: null, // To store the bound function for easy removal
+
+            init(callback) {
+                this.resizeCallback = callback;
+                this.lastDevicePixelRatio = window.devicePixelRatio || 1;
+                this.boundEventHandler = this.handleEvent.bind(this); // Bind once
+            },
+
+            // Generic event handler that debounces the actual processing
+            handleEvent() {
+                if (this.eventDebounceTimeout) {
+                    clearTimeout(this.eventDebounceTimeout);
+                }
+                this.eventDebounceTimeout = setTimeout(() => {
+                    this.processViewportChange();
+                    this.eventDebounceTimeout = null;
+                }, this.debounceTime);
+            },
+            
+            // Checks for DPR changes and calls the main resize callback
+            processViewportChange() {
+                const currentDpr = window.devicePixelRatio || 1;
+                if (Math.abs(currentDpr - this.lastDevicePixelRatio) > 0.001) {
+                    // console.log(`DPR changed from ${this.lastDevicePixelRatio} to ${currentDpr}`);
+                    this.lastDevicePixelRatio = currentDpr;
+                }
+                // Always trigger the resize callback as dimensions might change independently of DPR
+                if (this.resizeCallback) {
+                    this.resizeCallback();
+                }
+            },
+
+            startListening() {
+                if (this.isListening) return;
+                this.isListening = true;
+
+                const mainContent = document.querySelector('.main-content');
+                if (window.ResizeObserver && mainContent) {
+                    this.resizeObserver = new ResizeObserver(this.boundEventHandler);
+                    this.resizeObserver.observe(mainContent);
+                    // console.log("ViewportHandler: Using ResizeObserver.");
+                } else {
+                    window.addEventListener('resize', this.boundEventHandler, { passive: true });
+                    // console.log("ViewportHandler: Using window resize event.");
+                }
+
+                if ('orientation' in window && 'onorientationchange' in window) {
+                    window.addEventListener('orientationchange', this.boundEventHandler, { passive: true });
+                    // console.log("ViewportHandler: Added orientationchange listener.");
+                }
+
+                // Specific listener for Ctrl+Wheel zoom (especially for Firefox)
+                // Note: This might also be caught by devicePixelRatio changes in modern browsers
+                window.addEventListener('wheel', (event) => {
+                    if (event.ctrlKey) {
+                        // This event might fire very rapidly. The debounced handler will manage it.
+                        this.boundEventHandler();
+                    }
+                }, { passive: true });
+            },
+
+            stopListening() {
+                if (!this.isListening) return;
+                this.isListening = false;
+
+                if (this.resizeObserver) {
+                    this.resizeObserver.disconnect();
+                    this.resizeObserver = null;
+                }
+                window.removeEventListener('resize', this.boundEventHandler);
+                if ('orientation' in window && 'onorientationchange' in window) {
+                    window.removeEventListener('orientationchange', this.boundEventHandler);
+                }
+                // How to remove the specific wheel listener?
+                // For simplicity, it's left; a more complex setup would store and remove it.
+
+                if (this.eventDebounceTimeout) {
+                    clearTimeout(this.eventDebounceTimeout);
+                }
+            }
+        };
+
 
         // --- Renderer (Canvas) ---
         GOL.Renderer = {
@@ -612,19 +707,17 @@
                 GOL.EventBus.subscribe('configSaved', (config) => this.updateColorsFromConfig(config));
                 GOL.EventBus.subscribe('configReset', (config) => this.updateColorsFromConfig(config));
 
-                const debouncedResize = debounce(() => this.resizeCanvas(), 250);
-                window.addEventListener('resize', debouncedResize);
+                // Initialize and start the viewport handler
+                GOL.ViewportHandler.init(() => { 
+                    this.resizeCanvasAndGrid();
+                });
+                GOL.ViewportHandler.startListening();
                 
-                // Add orientationchange listener for mobile devices
-                // Check if 'orientation' is in window and 'onorientationchange' is supported
-                if ('orientation' in window && 'onorientationchange' in window) {
-                    window.addEventListener('orientationchange', debouncedResize);
-                }
-                
-                // Delay the initial resize slightly to allow mobile browsers to settle layout
+                // Delay the initial resize significantly to allow mobile browsers to fully settle layout
                 setTimeout(() => {
-                    this.resizeCanvas(); 
-                }, 150); // Increased delay slightly, can be adjusted
+                    // console.log("Renderer.init: Delayed initial resizeCanvasAndGrid call");
+                    this.resizeCanvasAndGrid(); 
+                }, 250); // Delay can be adjusted (e.g., 150-300ms)
                 
                 return true;
             },
@@ -639,36 +732,41 @@
                 }
             },
 
-            resizeCanvas() {
+            // Renamed from resizeCanvas to reflect it might also adjust grid logic if needed in future
+            resizeCanvasAndGrid() {
                 const mainContent = document.querySelector('.main-content');
-                if (!mainContent || !this.canvas || !this.ctx) return;
+                if (!mainContent || !this.canvas || !this.ctx) {
+                    // console.warn("resizeCanvasAndGrid: Missing critical elements.");
+                    return;
+                }
 
-                const rect = mainContent.getBoundingClientRect();
-                const style = window.getComputedStyle(mainContent);
-                const paddingLeft = parseFloat(style.paddingLeft) || 0;
-                const paddingRight = parseFloat(style.paddingRight) || 0;
-                const paddingTop = parseFloat(style.paddingTop) || 0;
-                const paddingBottom = parseFloat(style.paddingBottom) || 0;
-
-                let availableWidth = Math.floor(rect.width - paddingLeft - paddingRight);
-                let availableHeight = Math.floor(rect.height - paddingTop - paddingBottom);
+                // Using clientWidth/Height which should be inner dimensions due to global box-sizing
+                let availableWidth = mainContent.clientWidth;
+                let availableHeight = mainContent.clientHeight;
                 
+                // Ensure dimensions are positive
                 availableWidth = Math.max(10, availableWidth); 
                 availableHeight = Math.max(10, availableHeight);
 
                 const maxCanvasSize = Math.min(availableWidth, availableHeight);
 
-                this.canvas.width = maxCanvasSize;
-                this.canvas.height = maxCanvasSize;
+                // Only update canvas physical dimensions if they actually change
+                if (this.canvas.width !== maxCanvasSize || this.canvas.height !== maxCanvasSize) {
+                    this.canvas.width = maxCanvasSize;
+                    this.canvas.height = maxCanvasSize;
+                    // console.log(`Canvas physical size set to: ${this.canvas.width}x${this.canvas.height}`);
+                }
                 
+                // Recalculate cell size based on new canvas dimensions and current grid rows/cols
                 if (GOL.Grid && GOL.Grid.cols > 0 && GOL.Grid.rows > 0) {
                     this.cellSize = Math.min(this.canvas.width / GOL.Grid.cols, this.canvas.height / GOL.Grid.rows);
                 } else {
-                    this.cellSize = 10; 
+                    this.cellSize = 10; // Fallback
                 }
-                this.cellSize = Math.max(1, this.cellSize); 
+                this.cellSize = Math.max(1, this.cellSize); // Ensure cell size is at least 1px
 
                 this.draw(GOL.Grid); 
+                // console.log(`Canvas logical resize: CellSize: ${this.cellSize}, Grid: ${GOL.Grid.rows}x${GOL.Grid.cols}`);
             },
 
             draw(gridInstance) {
@@ -1041,7 +1139,7 @@
             applyGridSettings(rows, cols, boundaryType) {
                 GOL.AnimationManager.reset(); 
                 GOL.Grid.init(rows, cols, boundaryType); 
-                GOL.Renderer.resizeCanvas(); 
+                GOL.Renderer.resizeCanvasAndGrid(); // Use the new name
                 GOL.PatternLibrary.clearSelection(); 
             },
 
@@ -1221,7 +1319,6 @@
 
                     GOL.Grid.init(initialRows, initialCols, initialConfig.boundaryType); 
 
-                    // Renderer init now handles its own initial resize with a delay
                     if (!GOL.Renderer.init('gameCanvas')) { 
                         GOL.ErrorHandler.handle(new Error("Renderer initialization failed."));
                         return;
@@ -1231,14 +1328,6 @@
                     
                     GOL.UIManager.init(); 
                     GOL.UIManager.applyConfigToUI(initialConfig); 
-
-                    // This call ensures UI reflects the grid size, and it also calls resizeCanvas.
-                    // The resizeCanvas in Renderer.init is now delayed, this one will also be affected by that if called too soon.
-                    // However, applyGridSettingsFromSelect itself calls GOL.Renderer.resizeCanvas()
-                    // Let's ensure this doesn't cause a double-quick resize.
-                    // The Renderer's own delayed initial resize should be sufficient.
-                    // We might not need to call applyGridSettingsFromSelect if applyConfigToUI and Renderer.init handle it.
-                    // For now, keeping it to ensure UI consistency, but the Renderer's delayed initial resize is key.
                     GOL.UIManager.applyGridSettingsFromSelect(initialConfig.gridSize, initialConfig.boundaryType);
 
 
@@ -1248,16 +1337,21 @@
                             const startRow = Math.floor(GOL.Grid.rows / 2) - Math.floor(rPentominoPattern.data.length / 2);
                             const startCol = Math.floor(GOL.Grid.cols / 2) - Math.floor(rPentominoPattern.data[0].length / 2);
                             GOL.Grid.placePattern(rPentominoPattern.data, startRow, startCol);
-                            GOL.Renderer.draw(GOL.Grid); 
+                            // Initial draw after pattern placement will be handled by the delayed resize in Renderer.init
+                            // or by applyGridSettingsFromSelect's call to resizeCanvasAndGrid.
                         } else {
                             console.warn("R-Pentomino pattern is too large for the initial grid size. Skipping placement.");
                         }
                     }
-
-                    GOL.UIManager.updateAnalytics({}); 
                     
+                    // Analytics will be updated by events or the initial resizeCanvasAndGrid call.
+                    // GOL.UIManager.updateAnalytics({}); // This might be redundant if resizeCanvasAndGrid updates it.
+
                     console.log("Game of Life Simulator initialized successfully.");
-                    GOL.UIManager.showMessage("Welcome to the Game of Life Simulator!", 3000);
+                     if (GOL.UIManager && GOL.UIManager.showMessage) {
+                        GOL.UIManager.showMessage("Welcome to the Game of Life Simulator!", 3000);
+                    }
+
 
                 } catch (error) {
                     GOL.ErrorHandler.handle(error, "Application initialization failed");

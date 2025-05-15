@@ -72,9 +72,12 @@
 
         canvas {
             display: block;
-            border: 1px solid #4a5568; /* Tailwind gray-700 */
-            border-radius: 0.5rem; /* rounded-lg */
+            border: 1px solid #4a5568;
+            border-radius: 0.5rem;
+            width: 100%;
+            height: 100%;
         }
+
         
         /* Panel Styling */
         .panel {
@@ -713,11 +716,9 @@
                 });
                 GOL.ViewportHandler.startListening();
                 
-                // Delay the initial resize significantly to allow mobile browsers to fully settle layout
-                setTimeout(() => {
-                    // console.log("Renderer.init: Delayed initial resizeCanvasAndGrid call");
-                    this.resizeCanvasAndGrid(); 
-                }, 250); // Delay can be adjusted (e.g., 150-300ms)
+                // Initial resize to set canvas to full size immediately
+                this.resizeCanvasAndGrid();
+
                 
                 return true;
             },

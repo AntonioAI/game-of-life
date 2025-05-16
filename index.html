@@ -22,70 +22,93 @@
             padding: 0;
             background-color: #1a202c; /* Tailwind gray-900 */
             color: #e2e8f0; /* Tailwind slate-200 */
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            overflow-x: hidden; /* Prevent horizontal scroll on main body */
+            /* Removed flex properties, .app-container will handle viewport filling */
         }
 
-        /* Main layout: Sidebar and Content Area */
+        /* Main layout: Uses flexbox and viewport units for responsiveness */
         .app-container {
             display: flex;
-            flex-direction: column; /* Stack sidebar above content on small screens */
-            flex-grow: 1;
+            width: 100vw; /* Full viewport width */
+            height: 100vh; /* Full viewport height */
+            overflow: hidden; /* Prevent scrollbars on the body/viewport */
         }
 
-        @media (min-width: 768px) { /* md breakpoint */
-            .app-container {
-                flex-direction: row; /* Sidebar next to content on larger screens */
-            }
-        }
-
-        .sidebar {
-            width: 100%;
+        .sidebar { /* This is your control panel */
+            width: 22vw; /* Adjusted percentage of viewport width */
+            min-width: 300px; /* Minimum width for usability, e.g., for controls */
+            max-width: 380px; /* Maximum width to prevent it taking too much space on large screens */
+            height: 100%; /* Matches the .app-container height */
             background-color: #2d3748; /* Tailwind gray-800 */
             padding: 1rem;
-            overflow-y: auto;
-            border-bottom: 1px solid #4a5568; /* Tailwind gray-700 */
-        }
-
-        @media (min-width: 768px) { /* md breakpoint */
-            .sidebar {
-                width: 320px; /* Fixed width for sidebar */
-                min-width: 320px;
-                height: 100vh; /* Full viewport height */
-                border-right: 1px solid #4a5568; /* Tailwind gray-700 */
-                border-bottom: none;
-            }
+            overflow-y: auto; /* Scroll if content overflows */
+            border-right: 1px solid #4a5568; /* Tailwind gray-700 */
+            display: flex;
+            flex-direction: column; /* Stack panels within sidebar */
+            gap: 1rem; /* Space between panels in the sidebar */
         }
         
-        .main-content {
-            flex-grow: 1;
-            padding: 1rem; /* Padding for spacing around the canvas */
+        .main-content { /* This is your grid container */
+            flex: 1; /* Takes up remaining space */
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden; /* Prevent canvas from causing scrollbars on main content */
-            min-height: 0; /* Allow flex item to shrink properly */
+            justify-content: center; /* Center the canvas horizontally */
+            align-items: center; /* Center the canvas vertically */
+            overflow: hidden; /* Prevent canvas overflow from causing scrollbars on this container */
+            padding: 1rem; /* Padding around the canvas area */
+            height: 100%; /* Matches the .app-container height */
         }
 
-        canvas {
-            display: block;
-            border: 1px solid #4a5568;
-            border-radius: 0.5rem;
-            width: 100%;
-            height: 100%;
+        #gameCanvas {
+            display: block; /* Good practice for canvas */
+            /* CSS for the canvas element to be responsive within its container */
+            /* The JS (resizeCanvasAndGrid) will set the actual width/height attributes for the drawing surface */
+            max-width: 100%;
+            max-height: 100%;
+            aspect-ratio: 1 / 1; /* Ensures the canvas element maintains a square shape */
+            
+            border: 1px solid #4a5568; /* Existing style */
+            border-radius: 0.5rem; /* Existing style */
+            background-color: #000000; /* Default background, can be overridden by JS config */
         }
+        
+        /* Media Queries for stacking layout on smaller screens */
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column; /* Stack sidebar above main content */
+                height: auto; /* Allow height to grow with content */
+                min-height: 100vh; /* Ensure it still tries to fill viewport height */
+            }
 
+            .sidebar {
+                width: 100%; /* Full width on small screens */
+                height: auto; /* Adjust height to content */
+                max-height: 45vh; /* Limit sidebar height to prevent it taking too much vertical space */
+                border-right: none; /* Remove side border */
+                border-bottom: 1px solid #4a5568; /* Add bottom border */
+                /* min-width and max-width are less critical here but can be adjusted if needed */
+            }
+
+            .main-content {
+                width: 100%; /* Full width */
+                /* height: auto; /* Let flex-grow handle height */
+                flex-grow: 1; /* Allow it to take remaining vertical space */
+                padding: 0.5rem; /* Reduce padding on smaller screens */
+                min-height: 0; /* Important for flex children to shrink correctly */
+            }
+
+            /* #gameCanvas styling (max-width, max-height, aspect-ratio) generally handles this well.
+               The JS will correctly size it based on the new .main-content dimensions. */
+        }
         
         /* Panel Styling */
         .panel {
             background-color: #2d3748; /* Tailwind gray-800 */
             border-radius: 0.5rem; /* rounded-lg */
             padding: 1rem;
-            margin-bottom: 1rem;
+            /* margin-bottom: 1rem; Removed, using gap in .sidebar now */
             border: 1px solid #4a5568; /* Tailwind gray-700 */
+        }
+        .panel:last-child {
+            margin-bottom: 0; /* Remove margin for the last panel if not using gap */
         }
         .panel-title {
             font-size: 1.125rem; /* text-lg */
@@ -428,7 +451,7 @@
             defaults: {
                 cellColor: '#4299E1',
                 gridLineColor: '#4A5568',
-                backgroundColor: '#000000',
+                backgroundColor: '#000000', // Default canvas background
                 speed: 10,
                 gridSize: '50x50', 
                 boundaryType: 'toroidal', 
@@ -456,7 +479,7 @@
                     this.current = { ...this.current, ...newConfig };
                     localStorage.setItem(this.localStorageKey, JSON.stringify(this.current));
                     GOL.EventBus.publish('configSaved', this.current);
-                    if (GOL.UIManager && GOL.UIManager.showMessage) { // Check UIManager availability
+                    if (GOL.UIManager && GOL.UIManager.showMessage) { 
                         GOL.UIManager.showMessage("Configuration saved!");
                     }
                 } catch (error) {
@@ -468,7 +491,7 @@
                 this.current = { ...this.defaults };
                 this.save(this.current); 
                 GOL.EventBus.publish('configReset', this.current);
-                 if (GOL.UIManager && GOL.UIManager.showMessage) { // Check UIManager availability
+                 if (GOL.UIManager && GOL.UIManager.showMessage) { 
                     GOL.UIManager.showMessage("Configuration reset to defaults.");
                 }
             },
@@ -596,23 +619,22 @@
             }
         };
         
-        // --- Viewport Change Handler (Inspired by ZoomDetector.js) ---
+        // --- Viewport Change Handler ---
         GOL.ViewportHandler = {
             resizeCallback: null,
-            debounceTime: 250, // Time in ms to wait after the last event before calling the callback
+            debounceTime: 150, // Adjusted debounce time
             lastDevicePixelRatio: 1,
             eventDebounceTimeout: null,
             isListening: false,
             resizeObserver: null,
-            boundEventHandler: null, // To store the bound function for easy removal
+            boundEventHandler: null,
 
             init(callback) {
                 this.resizeCallback = callback;
                 this.lastDevicePixelRatio = window.devicePixelRatio || 1;
-                this.boundEventHandler = this.handleEvent.bind(this); // Bind once
+                this.boundEventHandler = this.handleEvent.bind(this);
             },
 
-            // Generic event handler that debounces the actual processing
             handleEvent() {
                 if (this.eventDebounceTimeout) {
                     clearTimeout(this.eventDebounceTimeout);
@@ -623,14 +645,11 @@
                 }, this.debounceTime);
             },
             
-            // Checks for DPR changes and calls the main resize callback
             processViewportChange() {
                 const currentDpr = window.devicePixelRatio || 1;
                 if (Math.abs(currentDpr - this.lastDevicePixelRatio) > 0.001) {
-                    // console.log(`DPR changed from ${this.lastDevicePixelRatio} to ${currentDpr}`);
                     this.lastDevicePixelRatio = currentDpr;
                 }
-                // Always trigger the resize callback as dimensions might change independently of DPR
                 if (this.resizeCallback) {
                     this.resizeCallback();
                 }
@@ -640,26 +659,20 @@
                 if (this.isListening) return;
                 this.isListening = true;
 
-                const mainContent = document.querySelector('.main-content');
-                if (window.ResizeObserver && mainContent) {
+                // Observe the .app-container for size changes, as it dictates overall layout
+                const appContainer = document.querySelector('.app-container');
+                if (window.ResizeObserver && appContainer) {
                     this.resizeObserver = new ResizeObserver(this.boundEventHandler);
-                    this.resizeObserver.observe(mainContent);
-                    // console.log("ViewportHandler: Using ResizeObserver.");
+                    this.resizeObserver.observe(appContainer);
                 } else {
                     window.addEventListener('resize', this.boundEventHandler, { passive: true });
-                    // console.log("ViewportHandler: Using window resize event.");
                 }
 
                 if ('orientation' in window && 'onorientationchange' in window) {
                     window.addEventListener('orientationchange', this.boundEventHandler, { passive: true });
-                    // console.log("ViewportHandler: Added orientationchange listener.");
                 }
-
-                // Specific listener for Ctrl+Wheel zoom (especially for Firefox)
-                // Note: This might also be caught by devicePixelRatio changes in modern browsers
                 window.addEventListener('wheel', (event) => {
                     if (event.ctrlKey) {
-                        // This event might fire very rapidly. The debounced handler will manage it.
                         this.boundEventHandler();
                     }
                 }, { passive: true });
@@ -677,9 +690,8 @@
                 if ('orientation' in window && 'onorientationchange' in window) {
                     window.removeEventListener('orientationchange', this.boundEventHandler);
                 }
-                // How to remove the specific wheel listener?
-                // For simplicity, it's left; a more complex setup would store and remove it.
-
+                // Consider how to specifically remove the wheel listener if needed,
+                // though for this app, it might be acceptable to leave it.
                 if (this.eventDebounceTimeout) {
                     clearTimeout(this.eventDebounceTimeout);
                 }
@@ -710,15 +722,13 @@
                 GOL.EventBus.subscribe('configSaved', (config) => this.updateColorsFromConfig(config));
                 GOL.EventBus.subscribe('configReset', (config) => this.updateColorsFromConfig(config));
 
-                // Initialize and start the viewport handler
                 GOL.ViewportHandler.init(() => { 
                     this.resizeCanvasAndGrid();
                 });
                 GOL.ViewportHandler.startListening();
                 
-                // Initial resize to set canvas to full size immediately
-                this.resizeCanvasAndGrid();
-
+                // Initial resize after a short delay to ensure layout is stable
+                setTimeout(() => this.resizeCanvasAndGrid(), 50);
                 
                 return true;
             },
@@ -728,46 +738,48 @@
                 this.gridLineColor = config.gridLineColor || GOL.GameConfig.defaults.gridLineColor;
                 this.backgroundColor = config.backgroundColor || GOL.GameConfig.defaults.backgroundColor;
                 
+                // Update canvas style background as well, if not transparent
+                if (this.canvas && this.backgroundColor !== 'transparent') {
+                    this.canvas.style.backgroundColor = this.backgroundColor;
+                }
+
                 if (this.canvas && this.ctx) { 
                    this.draw(GOL.Grid); 
                 }
             },
 
-            // Renamed from resizeCanvas to reflect it might also adjust grid logic if needed in future
             resizeCanvasAndGrid() {
                 const mainContent = document.querySelector('.main-content');
                 if (!mainContent || !this.canvas || !this.ctx) {
-                    // console.warn("resizeCanvasAndGrid: Missing critical elements.");
                     return;
                 }
 
-                // Using clientWidth/Height which should be inner dimensions due to global box-sizing
+                // clientWidth/Height gives the inner dimensions of mainContent, respecting its padding.
+                // This is the actual space available for the canvas element.
                 let availableWidth = mainContent.clientWidth;
                 let availableHeight = mainContent.clientHeight;
                 
-                // Ensure dimensions are positive
                 availableWidth = Math.max(10, availableWidth); 
                 availableHeight = Math.max(10, availableHeight);
 
-                const maxCanvasSize = Math.min(availableWidth, availableHeight);
+                // Determine the largest square size that fits within the available space.
+                const maxCanvasSize = Math.floor(Math.min(availableWidth, availableHeight));
 
-                // Only update canvas physical dimensions if they actually change
+                // Set the canvas drawing surface (attributes) to this size.
+                // The CSS (aspect-ratio, max-width/height) ensures the element scales visually.
                 if (this.canvas.width !== maxCanvasSize || this.canvas.height !== maxCanvasSize) {
                     this.canvas.width = maxCanvasSize;
                     this.canvas.height = maxCanvasSize;
-                    // console.log(`Canvas physical size set to: ${this.canvas.width}x${this.canvas.height}`);
                 }
                 
-                // Recalculate cell size based on new canvas dimensions and current grid rows/cols
                 if (GOL.Grid && GOL.Grid.cols > 0 && GOL.Grid.rows > 0) {
                     this.cellSize = Math.min(this.canvas.width / GOL.Grid.cols, this.canvas.height / GOL.Grid.rows);
                 } else {
                     this.cellSize = 10; // Fallback
                 }
-                this.cellSize = Math.max(1, this.cellSize); // Ensure cell size is at least 1px
+                this.cellSize = Math.max(1, this.cellSize);
 
                 this.draw(GOL.Grid); 
-                // console.log(`Canvas logical resize: CellSize: ${this.cellSize}, Grid: ${GOL.Grid.rows}x${GOL.Grid.cols}`);
             },
 
             draw(gridInstance) {
@@ -775,10 +787,11 @@
                     return; 
                 }
                 
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                // Clear with the configured background color
                 this.ctx.fillStyle = this.backgroundColor;
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
                 
+                // Calculate offset to center the grid drawing on the canvas if cell sizes don't perfectly match
                 const gridActualWidth = this.cellSize * gridInstance.cols;
                 const gridActualHeight = this.cellSize * gridInstance.rows;
                 const offsetX = (this.canvas.width - gridActualWidth) / 2;
@@ -793,11 +806,19 @@
                         const cellX = offsetX + c * this.cellSize;
                         const cellY = offsetY + r * this.cellSize;
 
-                        this.ctx.strokeRect(cellX, cellY, this.cellSize, this.cellSize);
+                        // Draw grid line (stroke)
+                        this.ctx.strokeRect(Math.floor(cellX), Math.floor(cellY), Math.ceil(this.cellSize), Math.ceil(this.cellSize));
 
                         if (gridInstance.grid[r][c] === 1) { 
                             this.ctx.fillStyle = this.cellColor;
-                            this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
+                            // Fill slightly smaller to make grid lines more visible if cell and grid line colors are similar
+                            const inset = this.cellSize > 2 ? 0.5 : 0; // Example inset
+                            this.ctx.fillRect(
+                                Math.floor(cellX + inset), 
+                                Math.floor(cellY + inset), 
+                                Math.ceil(this.cellSize - inset * 2), 
+                                Math.ceil(this.cellSize - inset * 2)
+                            );
                         }
                     }
                 }
@@ -1140,7 +1161,7 @@
             applyGridSettings(rows, cols, boundaryType) {
                 GOL.AnimationManager.reset(); 
                 GOL.Grid.init(rows, cols, boundaryType); 
-                GOL.Renderer.resizeCanvasAndGrid(); // Use the new name
+                GOL.Renderer.resizeCanvasAndGrid();
                 GOL.PatternLibrary.clearSelection(); 
             },
 
@@ -1329,6 +1350,7 @@
                     
                     GOL.UIManager.init(); 
                     GOL.UIManager.applyConfigToUI(initialConfig); 
+                    // This will also trigger the initial resizeCanvasAndGrid via event or direct call
                     GOL.UIManager.applyGridSettingsFromSelect(initialConfig.gridSize, initialConfig.boundaryType);
 
 
@@ -1338,15 +1360,15 @@
                             const startRow = Math.floor(GOL.Grid.rows / 2) - Math.floor(rPentominoPattern.data.length / 2);
                             const startCol = Math.floor(GOL.Grid.cols / 2) - Math.floor(rPentominoPattern.data[0].length / 2);
                             GOL.Grid.placePattern(rPentominoPattern.data, startRow, startCol);
-                            // Initial draw after pattern placement will be handled by the delayed resize in Renderer.init
-                            // or by applyGridSettingsFromSelect's call to resizeCanvasAndGrid.
+                            // Initial draw will be handled by resizeCanvasAndGrid called from applyGridSettings
                         } else {
                             console.warn("R-Pentomino pattern is too large for the initial grid size. Skipping placement.");
                         }
                     }
                     
-                    // Analytics will be updated by events or the initial resizeCanvasAndGrid call.
-                    // GOL.UIManager.updateAnalytics({}); // This might be redundant if resizeCanvasAndGrid updates it.
+                    // Final draw call to ensure everything is rendered after potential pattern placement and initial setup.
+                    // This might be redundant if applyGridSettings already ensures a draw.
+                    // GOL.Renderer.draw(GOL.Grid); // Already handled by resizeCanvasAndGrid
 
                     console.log("Game of Life Simulator initialized successfully.");
                      if (GOL.UIManager && GOL.UIManager.showMessage) {

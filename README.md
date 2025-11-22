@@ -245,7 +245,7 @@ Vercel provides free hosting with automatic deployments:
 
 3. **Configure build settings**
    - Build command: `npm run build`
-   - Output directory: `dist`
+   - Output directory: `dist/public`
 
 4. **Deploy**
    - Click "Deploy"

@@ -5,9 +5,11 @@ import PatternPreview from './PatternPreview';
 
 interface PatternSelectorProps {
   onLoadPattern: (pattern: Pattern, startRow: number, startCol: number) => void;
+  gridWidth: number;
+  gridHeight: number;
 }
 
-function PatternSelector({ onLoadPattern }: PatternSelectorProps) {
+function PatternSelector({ onLoadPattern, gridWidth, gridHeight }: PatternSelectorProps) {
   const [selectedPattern, setSelectedPattern] = React.useState<Pattern>(PATTERNS[0]);
   const [showMenu, setShowMenu] = React.useState(false);
 
@@ -17,8 +19,19 @@ function PatternSelector({ onLoadPattern }: PatternSelectorProps) {
   };
 
   const handleLoadPattern = () => {
-    const startRow = Math.floor(Math.random() * 20);
-    const startCol = Math.floor(Math.random() * 20);
+    // Calculate pattern bounds to center it properly
+    const minRow = Math.min(...selectedPattern.cells.map(([r]) => r));
+    const maxRow = Math.max(...selectedPattern.cells.map(([r]) => r));
+    const minCol = Math.min(...selectedPattern.cells.map(([, c]) => c));
+    const maxCol = Math.max(...selectedPattern.cells.map(([, c]) => c));
+    
+    const patternHeight = maxRow - minRow + 1;
+    const patternWidth = maxCol - minCol + 1;
+    
+    // Center the pattern on the grid
+    const startRow = Math.floor((gridHeight - patternHeight) / 2) - minRow;
+    const startCol = Math.floor((gridWidth - patternWidth) / 2) - minCol;
+    
     onLoadPattern(selectedPattern, startRow, startCol);
   };
 
@@ -63,7 +76,7 @@ function PatternSelector({ onLoadPattern }: PatternSelectorProps) {
         </Button>
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        Patterns are placed randomly on the grid. Click Load multiple times to add more patterns.
+        Patterns are placed at the center of the grid. Click Load multiple times to add more patterns.
       </p>
     </div>
   );

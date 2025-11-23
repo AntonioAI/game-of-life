@@ -243,9 +243,9 @@ Vercel provides free hosting with automatic deployments:
    - Import your GitHub repository
    - Vercel auto-detects the setup
 
-3. **Configure build settings**
-   - Build command: `npm run build`
-   - Output directory: `dist`
+ 3. **Configure build settings**
+    - Build command: `npm run build`
+    - Output directory: `dist/public`
 
 4. **Deploy**
    - Click "Deploy"

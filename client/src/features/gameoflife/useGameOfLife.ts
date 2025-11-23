@@ -18,6 +18,7 @@ export interface GameOfLifeState {
   deadCellColor: string;
   aliveCellColor: string;
   gridThickness: number;
+  populationHistory: Array<{ generation: number; population: number }>;
   toggleCell: (row: number, col: number) => void;
   toggleSimulation: () => void;
   setSpeed: (speed: number) => void;
@@ -112,6 +113,7 @@ function useGameOfLife(): GameOfLifeState {
   const [deadCellColor, setDeadCellColor] = useState('#f3f4f6');
   const [aliveCellColor, setAliveCellColor] = useState('#06b6d4');
   const [gridThickness, setGridThickness] = useState(1);
+  const [populationHistory, setPopulationHistory] = useState<Array<{ generation: number; population: number }>>([]);
   const simulationRef = useRef<NodeJS.Timeout | null>(null);
 
   const setGridSize = useCallback((width: number, height: number) => {
@@ -142,6 +144,7 @@ function useGameOfLife(): GameOfLifeState {
     setGrid(createEmptyGrid(gridWidth, gridHeight));
     setGeneration(0);
     setIsRunning(false);
+    setPopulationHistory([]);
   }, [gridWidth, gridHeight]);
 
   const randomize = useCallback(() => {
@@ -216,6 +219,13 @@ function useGameOfLife(): GameOfLifeState {
     setPreviousLiveCells(liveCells);
   }, [generation, liveCells]);
 
+  useEffect(() => {
+    setPopulationHistory((prev) => {
+      const updated = [...prev, { generation, population: liveCells }];
+      return updated.slice(-300);
+    });
+  }, [generation, liveCells]);
+
   return {
     grid,
     isRunning,
@@ -231,6 +241,7 @@ function useGameOfLife(): GameOfLifeState {
     deadCellColor,
     aliveCellColor,
     gridThickness,
+    populationHistory,
     toggleCell,
     toggleSimulation,
     setSpeed,

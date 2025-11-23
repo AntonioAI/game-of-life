@@ -6,6 +6,7 @@ import PatternSelector from '../features/gameoflife/PatternSelector';
 import GridSizeSelector from '../features/gameoflife/GridSizeSelector';
 import Statistics from '../features/gameoflife/Statistics';
 import Analytics from '../features/gameoflife/Analytics';
+import PopulationHistory from '../features/gameoflife/PopulationHistory';
 import ColorCustomizer from '../features/gameoflife/ColorCustomizer';
 import useGameOfLife from '../features/gameoflife/useGameOfLife';
 
@@ -25,6 +26,7 @@ function GameOfLife() {
     deadCellColor,
     aliveCellColor,
     gridThickness,
+    populationHistory,
     toggleCell,
     toggleSimulation,
     setSpeed,
@@ -82,6 +84,7 @@ function GameOfLife() {
           speed={speed}
           boundaryType={boundaryType}
         />
+        <PopulationHistory data={populationHistory} />
         <Statistics generation={generation} liveCells={liveCells} growthRate={growthRate} />
 
         <div className="space-y-6">

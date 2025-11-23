@@ -43,6 +43,16 @@ function GameOfLife() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900 p-3 md:p-8">
       <div className="mx-auto max-w-4xl space-y-6">
+        <div className="flex items-center gap-3">
+          <a href="https://antonioai.github.io/#projects">
+            <Button
+              variant="outline"
+              className="text-gray-700 dark:text-gray-300"
+            >
+              ← Back to Projects
+            </Button>
+          </a>
+        </div>
         <div>
           <h1 className="mb-2 text-2xl md:text-4xl font-bold text-gray-900 dark:text-white">
             Conway's Game of Life
@@ -121,9 +131,9 @@ function GameOfLife() {
             />
           </div>
 
-          <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
-            <PatternSelector onLoadPattern={loadPattern} />
-          </div>
+           <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
+             <PatternSelector onLoadPattern={loadPattern} gridWidth={gridWidth} gridHeight={gridHeight} />
+           </div>
 
           <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
             <label className="mb-4 block text-sm font-semibold text-gray-900 dark:text-white">
@@ -177,6 +187,10 @@ function GameOfLife() {
           <p className="text-gray-700 dark:text-gray-300">
             <strong className="text-gray-900 dark:text-white">Rules:</strong> A live cell with 2-3 neighbors survives, a dead cell with exactly 3 neighbors becomes alive.
           </p>
+        </div>
+
+        <div className="mt-12 text-center text-xs text-gray-500 dark:text-gray-500 border-t border-gray-200 dark:border-gray-700 pt-4">
+          <p>&copy; {new Date().getFullYear()} Antonio Innocente. Conway's Game of Life. All rights reserved.</p>
         </div>
       </div>
     </div>

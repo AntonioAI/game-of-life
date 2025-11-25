@@ -7,6 +7,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 
 interface PopulationHistoryProps {
@@ -24,11 +25,29 @@ function PopulationHistory({ data }: PopulationHistoryProps) {
     );
   }
 
+  const maxPopulation = Math.max(...data.map((d) => d.population));
+  const peakDataPoint = data.find((d) => d.population === maxPopulation);
+
   return (
     <div className="w-full rounded-lg bg-gradient-to-br from-indigo-50 to-indigo-25 dark:from-indigo-900/20 dark:to-indigo-800/20 p-4 border border-indigo-200 dark:border-indigo-700">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">
-        Population History
-      </h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+          Population History
+        </h3>
+        {maxPopulation > 0 && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700">
+            <span className="text-lg">📍</span>
+            <div className="flex flex-col gap-0">
+              <span className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                Peak: {maxPopulation} cells
+              </span>
+              <span className="text-xs text-amber-800 dark:text-amber-300">
+                @ Gen {peakDataPoint?.generation}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart
           data={data}
@@ -55,7 +74,25 @@ function PopulationHistory({ data }: PopulationHistoryProps) {
               color: '#fff',
             }}
             cursor={{ stroke: 'rgba(99, 102, 241, 0.3)' }}
+            formatter={(value) => [value, 'Population']}
+            labelFormatter={(label) => `Gen ${label}`}
           />
+          {maxPopulation > 0 && (
+            <ReferenceLine
+              y={maxPopulation}
+              stroke="#f59e0b"
+              strokeDasharray="5 5"
+              strokeWidth={2}
+              opacity={0.5}
+              label={{
+                value: `Peak: ${maxPopulation}`,
+                position: 'right',
+                fill: '#b45309',
+                fontSize: 12,
+                offset: 10,
+              }}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="population"

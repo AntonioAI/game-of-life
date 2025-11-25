@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Pattern } from './patterns';
+import { PATTERNS } from './patterns';
 
 type Grid = boolean[][];
 
@@ -101,9 +102,24 @@ function countLiveCells(grid: Grid): number {
 }
 
 function useGameOfLife(): GameOfLifeState {
-  const [gridWidth, setGridWidth] = useState(40);
-  const [gridHeight, setGridHeight] = useState(40);
-  const [grid, setGrid] = useState<Grid>(createEmptyGrid(40, 40));
+   const [gridWidth, setGridWidth] = useState(40);
+   const [gridHeight, setGridHeight] = useState(40);
+   const [grid, setGrid] = useState<Grid>(() => {
+     const emptyGrid = createEmptyGrid(40, 40);
+     const pentomino = PATTERNS.find(p => p.name === 'Pentomino');
+     if (pentomino) {
+       const startRow = Math.floor(40 / 2) - 1;
+       const startCol = Math.floor(40 / 2) - 1;
+       pentomino.cells.forEach(([row, col]) => {
+         const actualRow = (startRow + row) % 40;
+         const actualCol = (startCol + col) % 40;
+         if (emptyGrid[actualRow]) {
+           emptyGrid[actualRow][actualCol] = true;
+         }
+       });
+     }
+     return emptyGrid;
+   });
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(100);
   const [generation, setGeneration] = useState(0);
@@ -219,12 +235,23 @@ function useGameOfLife(): GameOfLifeState {
     setPreviousLiveCells(liveCells);
   }, [generation, liveCells]);
 
-  useEffect(() => {
-    setPopulationHistory((prev) => {
-      const updated = [...prev, { generation, population: liveCells }];
-      return updated.slice(-300);
-    });
-  }, [generation, liveCells]);
+    useEffect(() => {
+      setPopulationHistory((prev) => {
+        const existingIndex = prev.findIndex((entry) => entry.generation === generation);
+        let updated: Array<{ generation: number; population: number }>;
+        
+        if (existingIndex >= 0) {
+          // Update existing generation entry
+          updated = [...prev];
+          updated[existingIndex] = { generation, population: liveCells };
+        } else {
+          // Add new generation entry
+          updated = [...prev, { generation, population: liveCells }];
+        }
+        
+        return updated;
+      });
+    }, [generation, liveCells]);
 
   return {
     grid,

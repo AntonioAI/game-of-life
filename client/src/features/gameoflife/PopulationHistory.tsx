@@ -9,12 +9,15 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
+import { Slider } from '../../components/ui/slider';
 
 interface PopulationHistoryProps {
   data: Array<{ generation: number; population: number }>;
 }
 
 function PopulationHistory({ data }: PopulationHistoryProps) {
+  const [zoomRange, setZoomRange] = React.useState<[number, number]>([0, 100]);
+
   if (data.length === 0) {
     return (
       <div className="w-full h-64 flex items-center justify-center rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/40 dark:to-gray-800/40 border border-gray-200 dark:border-gray-700">
@@ -27,6 +30,26 @@ function PopulationHistory({ data }: PopulationHistoryProps) {
 
   const maxPopulation = Math.max(...data.map((d) => d.population));
   const peakDataPoint = data.find((d) => d.population === maxPopulation);
+
+  // Calculate the generation range for zoom
+  const minGen = data[0]?.generation ?? 0;
+  const maxGen = data[data.length - 1]?.generation ?? 0;
+  const genRange = maxGen - minGen || 1;
+  const zoomedMinGen = Math.round(minGen + (genRange * zoomRange[0]) / 100);
+  const zoomedMaxGen = Math.round(minGen + (genRange * zoomRange[1]) / 100);
+
+  // Filter data based on zoom range
+  const filteredData = data.filter(
+    (d) => d.generation >= zoomedMinGen && d.generation <= zoomedMaxGen
+  );
+
+  const handleZoomChange = (value: number[]) => {
+    setZoomRange([value[0], value[1]]);
+  };
+
+  const resetZoom = () => {
+    setZoomRange([0, 100]);
+  };
 
   return (
     <div className="w-full rounded-lg bg-gradient-to-br from-indigo-50 to-indigo-25 dark:from-indigo-900/20 dark:to-indigo-800/20 p-4 border border-indigo-200 dark:border-indigo-700">
@@ -48,20 +71,23 @@ function PopulationHistory({ data }: PopulationHistoryProps) {
           </div>
         )}
       </div>
-      <ResponsiveContainer width="100%" height={300}>
+       <ResponsiveContainer width="100%" height={300}>
         <LineChart
-          data={data}
+          data={filteredData}
           margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
         >
           <CartesianGrid
             strokeDasharray="3 3"
             className="stroke-indigo-200 dark:stroke-indigo-800"
           />
-          <XAxis
-            dataKey="generation"
-            className="text-xs text-gray-500 dark:text-gray-400"
-            tick={{ fill: 'currentColor' }}
-          />
+           <XAxis
+              dataKey="generation"
+              className="text-xs text-gray-500 dark:text-gray-400"
+              tick={{ fill: 'currentColor' }}
+              domain={[zoomedMinGen, zoomedMaxGen]}
+              type="number"
+              allowDecimals={false}
+            />
           <YAxis
             className="text-xs text-gray-500 dark:text-gray-400"
             tick={{ fill: 'currentColor' }}
@@ -103,6 +129,32 @@ function PopulationHistory({ data }: PopulationHistoryProps) {
           />
         </LineChart>
       </ResponsiveContainer>
+      <div className="mt-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+            Zoom Range
+          </label>
+          <button
+            onClick={resetZoom}
+            className="px-2 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded transition-colors"
+          >
+            Reset
+          </button>
+        </div>
+         <Slider
+           value={zoomRange}
+           onValueChange={handleZoomChange}
+           min={0}
+           max={100}
+           step={1}
+           minStepsBetweenThumbs={1}
+           className="w-full"
+           defaultValue={[0, 100]}
+         />
+        <div className="text-xs text-gray-600 dark:text-gray-400 text-center">
+          Gen {zoomedMinGen} - Gen {zoomedMaxGen}
+        </div>
+      </div>
     </div>
   );
 }

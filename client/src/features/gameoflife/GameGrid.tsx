@@ -8,6 +8,8 @@ interface GameGridProps {
   aliveCellColor: string;
   gridColor: string;
   gridThickness: number;
+  showGridOverlay: boolean;
+  gridLineOpacity: number;
 }
 
 function GameGrid({
@@ -17,6 +19,8 @@ function GameGrid({
   aliveCellColor,
   gridColor,
   gridThickness,
+  showGridOverlay,
+  gridLineOpacity,
 }: GameGridProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [cellSize, setCellSize] = React.useState(16);
@@ -78,6 +82,8 @@ function GameGrid({
                 aliveCellColor={aliveCellColor}
                 gridColor={gridColor}
                 gridThickness={gridThickness}
+                showGridOverlay={showGridOverlay}
+                gridLineOpacity={gridLineOpacity}
               />
             ))}
           </div>

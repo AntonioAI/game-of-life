@@ -19,6 +19,8 @@ export interface GameOfLifeState {
   deadCellColor: string;
   aliveCellColor: string;
   gridThickness: number;
+  showGridOverlay: boolean;
+  gridLineOpacity: number;
   populationHistory: Array<{ generation: number; population: number }>;
   toggleCell: (row: number, col: number) => void;
   toggleSimulation: () => void;
@@ -33,6 +35,8 @@ export interface GameOfLifeState {
   setDeadCellColor: (color: string) => void;
   setAliveCellColor: (color: string) => void;
   setGridThickness: (thickness: number) => void;
+  setShowGridOverlay: (show: boolean) => void;
+  setGridLineOpacity: (opacity: number) => void;
 }
 
 function createEmptyGrid(width: number, height: number): Grid {
@@ -102,24 +106,26 @@ function countLiveCells(grid: Grid): number {
 }
 
 function useGameOfLife(): GameOfLifeState {
-   const [gridWidth, setGridWidth] = useState(40);
-   const [gridHeight, setGridHeight] = useState(40);
-   const [grid, setGrid] = useState<Grid>(() => {
-     const emptyGrid = createEmptyGrid(40, 40);
-     const pentomino = PATTERNS.find(p => p.name === 'Pentomino');
-     if (pentomino) {
-       const startRow = Math.floor(40 / 2) - 1;
-       const startCol = Math.floor(40 / 2) - 1;
-       pentomino.cells.forEach(([row, col]) => {
-         const actualRow = (startRow + row) % 40;
-         const actualCol = (startCol + col) % 40;
-         if (emptyGrid[actualRow]) {
-           emptyGrid[actualRow][actualCol] = true;
-         }
-       });
-     }
-     return emptyGrid;
-   });
+  const simulationRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [gridWidth, setGridWidth] = useState(40);
+  const [gridHeight, setGridHeight] = useState(40);
+  const [grid, setGrid] = useState<Grid>(() => {
+    const emptyGrid = createEmptyGrid(40, 40);
+    const pentomino = PATTERNS.find(p => p.name === 'Pentomino');
+    if (pentomino) {
+      const startRow = Math.floor(40 / 2) - 1;
+      const startCol = Math.floor(40 / 2) - 1;
+      pentomino.cells.forEach(([row, col]) => {
+        const actualRow = (startRow + row) % 40;
+        const actualCol = (startCol + col) % 40;
+        if (emptyGrid[actualRow]) {
+          emptyGrid[actualRow][actualCol] = true;
+        }
+      });
+    }
+    return emptyGrid;
+  });
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(100);
   const [generation, setGeneration] = useState(0);
@@ -129,8 +135,9 @@ function useGameOfLife(): GameOfLifeState {
   const [deadCellColor, setDeadCellColor] = useState('#f3f4f6');
   const [aliveCellColor, setAliveCellColor] = useState('#06b6d4');
   const [gridThickness, setGridThickness] = useState(1);
+  const [showGridOverlay, setShowGridOverlay] = useState(true);
+  const [gridLineOpacity, setGridLineOpacity] = useState(0.5);
   const [populationHistory, setPopulationHistory] = useState<Array<{ generation: number; population: number }>>([]);
-  const simulationRef = useRef<NodeJS.Timeout | null>(null);
 
   const setGridSize = useCallback((width: number, height: number) => {
     setGridWidth(width);
@@ -268,6 +275,8 @@ function useGameOfLife(): GameOfLifeState {
     deadCellColor,
     aliveCellColor,
     gridThickness,
+    showGridOverlay,
+    gridLineOpacity,
     populationHistory,
     toggleCell,
     toggleSimulation,
@@ -282,6 +291,8 @@ function useGameOfLife(): GameOfLifeState {
     setDeadCellColor,
     setAliveCellColor,
     setGridThickness,
+    setShowGridOverlay,
+    setGridLineOpacity,
   };
 }
 

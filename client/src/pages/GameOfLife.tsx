@@ -8,6 +8,7 @@ import Statistics from '../features/gameoflife/Statistics';
 import Analytics from '../features/gameoflife/Analytics';
 import PopulationHistory from '../features/gameoflife/PopulationHistory';
 import ColorCustomizer from '../features/gameoflife/ColorCustomizer';
+import GridOverlayCustomizer from '../features/gameoflife/GridOverlayCustomizer';
 import useGameOfLife from '../features/gameoflife/useGameOfLife';
 
 function GameOfLife() {
@@ -26,6 +27,8 @@ function GameOfLife() {
     deadCellColor,
     aliveCellColor,
     gridThickness,
+    showGridOverlay,
+    gridLineOpacity,
     populationHistory,
     toggleCell,
     toggleSimulation,
@@ -40,6 +43,8 @@ function GameOfLife() {
     setDeadCellColor,
     setAliveCellColor,
     setGridThickness,
+    setShowGridOverlay,
+    setGridLineOpacity,
   } = useGameOfLife();
 
   return (
@@ -72,20 +77,21 @@ function GameOfLife() {
             aliveCellColor={aliveCellColor}
             gridColor={gridColor}
             gridThickness={gridThickness}
+            showGridOverlay={showGridOverlay}
+            gridLineOpacity={gridLineOpacity}
           />
         </div>
 
         <Analytics
-          generation={generation}
-          liveCells={liveCells}
-          populationDensity={populationDensity}
-          gridWidth={gridWidth}
-          gridHeight={gridHeight}
-          speed={speed}
-          boundaryType={boundaryType}
-        />
-        <PopulationHistory data={populationHistory} />
-        <Statistics generation={generation} liveCells={liveCells} growthRate={growthRate} />
+           generation={generation}
+           liveCells={liveCells}
+           populationDensity={populationDensity}
+           gridWidth={gridWidth}
+           gridHeight={gridHeight}
+           speed={speed}
+           boundaryType={boundaryType}
+         />
+         <PopulationHistory data={populationHistory} />
 
         <div className="space-y-6">
           <div className="flex flex-wrap gap-3">
@@ -181,6 +187,20 @@ function GameOfLife() {
               onGridThicknessChange={setGridThickness}
             />
           </div>
+
+           <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
+             <label className="mb-4 block text-sm font-semibold text-gray-900 dark:text-white">
+               Grid Overlay
+             </label>
+             <GridOverlayCustomizer
+               showGridOverlay={showGridOverlay}
+               gridLineOpacity={gridLineOpacity}
+               gridThickness={gridThickness}
+               onShowGridOverlayChange={setShowGridOverlay}
+               onGridLineOpacityChange={setGridLineOpacity}
+               onGridThicknessChange={setGridThickness}
+             />
+           </div>
         </div>
 
         <div className="mt-8 rounded-xl bg-blue-50 dark:bg-gray-800 p-5 border border-blue-200 dark:border-blue-900 text-sm">

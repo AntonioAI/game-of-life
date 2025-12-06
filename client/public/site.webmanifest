@@ -1,7 +1,7 @@
 {
-  "name": "Mimo app",
-  "short_name": "",
-  "description": "",
+  "name": "Game of Life Simulator",
+  "short_name": "Conway's Game",
+  "description": "An interactive Conway's Game of Life simulator with customizable patterns, colors, and grid settings.",
   "start_url": "/",
   "scope": "/",
   "icons": [

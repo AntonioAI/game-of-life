@@ -8,6 +8,8 @@ interface GameCellProps {
   aliveCellColor: string;
   gridColor: string;
   gridThickness: number;
+  showGridOverlay: boolean;
+  gridLineOpacity: number;
 }
 
 function GameCell({
@@ -18,7 +20,23 @@ function GameCell({
   aliveCellColor,
   gridColor,
   gridThickness,
+  showGridOverlay,
+  gridLineOpacity,
 }: GameCellProps) {
+  const getRgbFromHex = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return { r, g, b };
+  };
+
+  const borderColor = showGridOverlay
+    ? (() => {
+        const { r, g, b } = getRgbFromHex(gridColor);
+        return `rgba(${r}, ${g}, ${b}, ${gridLineOpacity})`;
+      })()
+    : 'transparent';
+
   return (
     <button
       onClick={onClick}
@@ -28,8 +46,9 @@ function GameCell({
         minWidth: `${size}px`,
         minHeight: `${size}px`,
         backgroundColor: isAlive ? aliveCellColor : deadCellColor,
-        borderColor: gridColor,
+        borderColor: borderColor,
         borderWidth: `${gridThickness}px`,
+        borderStyle: 'solid',
       }}
       className="border transition-colors hover:opacity-80"
       title={isAlive ? 'Alive' : 'Dead'}

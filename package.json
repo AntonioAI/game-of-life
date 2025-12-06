@@ -1,5 +1,5 @@
 {
-  "name": "mimo-magic-starter",
+  "name": "game-of-life-simulator",
   "private": true,
   "version": "0.1.0",
   "type": "module",

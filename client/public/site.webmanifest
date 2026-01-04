@@ -1,7 +1,7 @@
 {
-  "name": "Game of Life Simulator",
-  "short_name": "Conway's Game",
-  "description": "An interactive Conway's Game of Life simulator with customizable patterns, colors, and grid settings.",
+  "name": "Conway's Game of Life Simulator",
+  "short_name": "Game of Life",
+  "description": "Interactive Conway's Game of Life simulator for students, developers, and hobbyists. Explore cellular automata with customizable patterns, colors, and simulation settings.",
   "start_url": "/",
   "scope": "/",
   "icons": [
@@ -20,5 +20,5 @@
   "background_color": "#ffffff",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "categories": ["productivity", "utilities"]
+  "categories": ["productivity", "utilities", "education"]
 }

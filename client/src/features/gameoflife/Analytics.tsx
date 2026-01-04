@@ -56,9 +56,6 @@ function Analytics({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-        Real-time Analytics
-      </h2>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <AnalyticsCard
           label="Generation"

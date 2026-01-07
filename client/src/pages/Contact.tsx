@@ -3,7 +3,7 @@ import { Button } from '../components/ui/button';
 
 function Contact() {
   const handleOpenGitHub = () => {
-    window.open('https://github.com/yourusername/game-of-life/issues', '_blank', 'noopener,noreferrer');
+    window.open('https://github.com/AntonioAI/game-of-life/issues', '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -28,15 +28,17 @@ function Contact() {
                 We use GitHub Issues to track bugs, feature requests, and user feedback. This allows for transparent communication and helps us organize and prioritize improvements to the simulator.
               </p>
               
-              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">How to Submit an Issue</h3>
-                <ol className="space-y-2 text-gray-700 dark:text-gray-300 list-decimal list-inside">
-                  <li>Click the button below to open our GitHub Issues page</li>
-                  <li>Click the "New Issue" button (you may need to sign in to GitHub)</li>
-                  <li>Choose the appropriate issue type (Bug Report or Feature Request)</li>
-                  <li>Fill in the details and submit</li>
-                </ol>
-              </div>
+               <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">How to Submit an Issue</h3>
+                 <ol className="space-y-2 text-gray-700 dark:text-gray-300 list-decimal list-inside mb-4">
+                   <li>Check existing issues to see if your feedback has already been reported (optional but helpful)</li>
+                   <li>Click the button below to open our GitHub Issues page</li>
+                   <li>Click the \"New Issue\" button (you may need to sign in to GitHub—it's free and takes just a minute)</li>
+                   <li>Choose the appropriate issue type (Bug Report or Feature Request)</li>
+                   <li>Fill in the details and submit</li>
+                 </ol>
+                 <p className="text-sm text-gray-600 dark:text-gray-400 italic">Don't worry—you don't need to be a developer to submit an issue. Simply describe what you found or what you'd like to see improved, and we'll take it from there.</p>
+               </div>
 
               <Button
                 onClick={handleOpenGitHub}
@@ -118,6 +120,13 @@ function Contact() {
                 <li><strong>History:</strong> All feedback and bug reports are preserved for future reference</li>
                 <li><strong>Notifications:</strong> You'll receive updates when your issue is addressed or responded to</li>
               </ul>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">We Review Issues Regularly</h3>
+              <p className="text-gray-700 dark:text-gray-300">
+                We review and respond to issues on a regular basis. However, response times are not guaranteed and may vary depending on complexity and availability. We appreciate your patience and thank you for helping us improve the simulator.
+              </p>
             </div>
           </div>
         </div>

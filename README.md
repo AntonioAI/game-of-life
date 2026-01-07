@@ -78,11 +78,54 @@ An interactive, fully-featured implementation of **Conway's Game of Life** - a c
 
    The browser will automatically reload when you make changes.
 
+### Running Tests
+
+This project includes comprehensive unit tests to ensure code quality and reliability.
+
+**Run all tests:**
+```bash
+npm test
+```
+
+**Run tests in watch mode (for development):**
+```bash
+npm run test:watch
+```
+
+**Run tests with coverage report:**
+```bash
+npm run test:coverage
+```
+
+**Run tests with interactive UI:**
+```bash
+npm run test:ui
+```
+
+All tests follow the Arrange-Act-Assert pattern and cover:
+- Utility functions
+- React components
+- Custom hooks
+- Game logic
+- UI interactions
+
+**Build-Time Test Validation:**
+
+Tests automatically run during `npm run build`. **The build will fail if any tests fail**, ensuring:
+- All tests must pass before deployment
+- Clear, verbose error messages identify failing tests
+- Fast feedback with bail-on-first-failure
+- No deployments with broken functionality
+
+This is critical for platforms like Vercel, where failed builds prevent deployment of broken code.
+
 ### Building for Production
 
 ```bash
 npm run build
 ```
+
+**Important:** Tests run automatically during the build process. The build will fail if any tests don't pass.
 
 This creates:
 - Optimized frontend bundle in `/dist/public`
@@ -147,6 +190,14 @@ game-of-life/
 - **Node.js** - JavaScript runtime
 - **Express 5** - Web framework
 - **TypeScript** - Type-safe backend
+
+### Testing
+- **Vitest** - Fast unit test framework
+- **React Testing Library** - Component testing utilities
+- **@testing-library/jest-dom** - Custom DOM matchers
+- **@testing-library/user-event** - User interaction simulation
+- **@vitest/ui** - Interactive test runner UI
+- **Coverage Reports** - v8 coverage provider
 
 ### Development Tools
 - **TSX** - TypeScript executor with hot reload
@@ -233,7 +284,7 @@ Your site will be available at: `https://yourusername.github.io/game-of-life`
 
 ### Vercel (Recommended)
 
-Vercel provides free hosting with automatic deployments:
+Vercel provides free hosting with automatic deployments and runs tests automatically during deployment:
 
 1. **Push to GitHub** (follow steps above)
 
@@ -243,14 +294,22 @@ Vercel provides free hosting with automatic deployments:
    - Import your GitHub repository
    - Vercel auto-detects the setup
 
- 3. **Configure build settings**
-    - Build command: `npm run build`
-    - Output directory: `dist/public`
+3. **Configure build settings**
+   - Build command: `npm run build` (tests run automatically before build)
+   - Output directory: `dist/public`
+   - Node.js version: 18.x or higher
 
 4. **Deploy**
    - Click "Deploy"
+   - Tests run first - deployment only proceeds if all tests pass
    - Your site goes live instantly!
    - Automatic deployments on every push to `main`
+
+**Important Notes for Vercel:**
+- Tests must pass for deployment to succeed
+- Build logs will show test results
+- Failed tests will prevent broken code from being deployed
+- Coverage reports are generated but not published by default
 
 Your site will be available at: `https://your-project.vercel.app`
 

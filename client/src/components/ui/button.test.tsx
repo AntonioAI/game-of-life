@@ -77,7 +77,7 @@ describe('Button', () => {
 
       // Assert
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('h-10');
+      expect(button).toHaveClass('h-9');
     });
 
     it('should apply small size', () => {
@@ -86,7 +86,7 @@ describe('Button', () => {
 
       // Assert
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('h-9');
+      expect(button).toHaveClass('h-8');
     });
 
     it('should apply large size', () => {
@@ -95,7 +95,7 @@ describe('Button', () => {
 
       // Assert
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('h-11');
+      expect(button).toHaveClass('h-10');
     });
 
     it('should apply icon size', () => {
@@ -104,8 +104,8 @@ describe('Button', () => {
 
       // Assert
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('h-10');
-      expect(button).toHaveClass('w-10');
+      expect(button).toHaveClass('h-9');
+      expect(button).toHaveClass('w-9');
     });
   });
 

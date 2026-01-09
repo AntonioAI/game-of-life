@@ -151,8 +151,6 @@ function Terms() {
            </div>
          </div>
        </section>
-
-
     </main>
   );
 }

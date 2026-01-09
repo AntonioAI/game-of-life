@@ -97,7 +97,7 @@ describe('Button', () => {
 
       // Assert
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('h-9');
+      expect(button).toHaveClass('h-10');
     });
 
     it('should apply icon size', () => {

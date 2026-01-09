@@ -12,7 +12,6 @@ export interface GameOfLifeState {
   gridWidth: number;
   gridHeight: number;
   liveCells: number;
-  growthRate: number | null;
   populationDensity: number;
   boundaryType: 'toroidal' | 'finite';
   gridColor: string;
@@ -129,7 +128,6 @@ function useGameOfLife(): GameOfLifeState {
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(100);
   const [generation, setGeneration] = useState(0);
-  const [previousLiveCells, setPreviousLiveCells] = useState(0);
   const [boundaryType, setBoundaryType] = useState<'toroidal' | 'finite'>('toroidal');
   const [gridColor, setGridColor] = useState('#93c5fd');
   const [deadCellColor, setDeadCellColor] = useState('#f3f4f6');
@@ -207,7 +205,6 @@ function useGameOfLife(): GameOfLifeState {
   }, [gridWidth, gridHeight, boundaryType]);
 
   const liveCells = countLiveCells(grid);
-  const growthRate = generation > 0 ? liveCells - previousLiveCells : null;
   const populationDensity = (liveCells / (gridWidth * gridHeight)) * 100;
 
   useEffect(() => {
@@ -239,10 +236,6 @@ function useGameOfLife(): GameOfLifeState {
   }, [isRunning, speed, gridWidth, gridHeight, boundaryType]);
 
   useEffect(() => {
-    setPreviousLiveCells(liveCells);
-  }, [generation, liveCells]);
-
-    useEffect(() => {
       setPopulationHistory((prev) => {
         const existingIndex = prev.findIndex((entry) => entry.generation === generation);
         let updated: Array<{ generation: number; population: number }>;
@@ -268,7 +261,6 @@ function useGameOfLife(): GameOfLifeState {
     gridWidth,
     gridHeight,
     liveCells,
-    growthRate,
     populationDensity,
     boundaryType,
     gridColor,

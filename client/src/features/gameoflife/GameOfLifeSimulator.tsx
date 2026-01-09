@@ -182,10 +182,8 @@ function GameOfLifeSimulator() {
           <GridOverlayCustomizer
             showGridOverlay={showGridOverlay}
             gridLineOpacity={gridLineOpacity}
-            gridThickness={gridThickness}
             onShowGridOverlayChange={setShowGridOverlay}
             onGridLineOpacityChange={setGridLineOpacity}
-            onGridThicknessChange={setGridThickness}
           />
         </div>
       </div>

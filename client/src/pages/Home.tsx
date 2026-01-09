@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Link } from 'react-router-dom';
 import GameOfLife from '../features/gameoflife/GameOfLifeSimulator';
 
 function Home() {
@@ -41,34 +42,6 @@ function Home() {
         </div>
       </section>
 
-      {/* Quick Rules Summary */}
-      <section className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Understanding the Rules</h2>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
-            Conway's Game of Life follows four simple rules that govern how cells live, die, or are born in each generation:
-          </p>
-          <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-            <li className="flex gap-3">
-              <span className="font-semibold text-cyan-600 dark:text-cyan-400 min-w-fit">Survival:</span>
-              <span>A live cell with 2 or 3 live neighbors survives to the next generation.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="font-semibold text-cyan-600 dark:text-cyan-400 min-w-fit">Birth:</span>
-              <span>A dead cell with exactly 3 live neighbors becomes alive in the next generation.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="font-semibold text-red-600 dark:text-red-400 min-w-fit">Overpopulation:</span>
-              <span>A live cell with more than 3 neighbors dies due to overcrowding.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="font-semibold text-red-600 dark:text-red-400 min-w-fit">Isolation:</span>
-              <span>A live cell with fewer than 2 neighbors dies due to loneliness.</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-
       {/* Simulator Section */}
       <section className="bg-white dark:bg-gray-950">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -82,31 +55,6 @@ function Home() {
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">How It Works</h2>
 
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">The Rules</h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
-                Conway's Game of Life is governed by four simple rules applied to every generation:
-              </p>
-              <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-                <li className="flex gap-3">
-                  <span className="font-semibold text-cyan-600 dark:text-cyan-400 min-w-fit">Survival:</span>
-                  <span>A live cell with 2 or 3 live neighbors survives to the next generation.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="font-semibold text-cyan-600 dark:text-cyan-400 min-w-fit">Birth:</span>
-                  <span>A dead cell with exactly 3 live neighbors becomes alive in the next generation.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="font-semibold text-cyan-600 dark:text-cyan-400 min-w-fit">Death (Overpopulation):</span>
-                  <span>A live cell with more than 3 neighbors dies due to overpopulation.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="font-semibold text-cyan-600 dark:text-cyan-400 min-w-fit">Death (Isolation):</span>
-                  <span>A live cell with fewer than 2 neighbors dies due to loneliness.</span>
-                </li>
-              </ul>
-            </div>
-
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Getting Started</h3>
               <ol className="space-y-2 text-gray-700 dark:text-gray-300 list-decimal list-inside">
@@ -143,21 +91,21 @@ function Home() {
       <footer className="bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-wrap justify-center gap-6 mb-4">
-            <a href="/" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <Link to="/" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
               Home
-            </a>
-            <a href="/about" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+            </Link>
+            <Link to="/about" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
               About
-            </a>
-            <a href="/privacy" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+            </Link>
+            <Link to="/privacy" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
               Privacy Policy
-            </a>
-            <a href="/terms" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+            </Link>
+            <Link to="/terms" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
               Terms of Service
-            </a>
-            <a href="/contact" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+            </Link>
+            <Link to="/contact" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
               Support
-            </a>
+            </Link>
           </div>
           <p className="text-center text-xs text-gray-500 dark:text-gray-500">
             Conway's Game of Life Simulator - Educational Tool

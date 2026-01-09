@@ -78,6 +78,8 @@ describe('Button', () => {
       // Assert
       const button = screen.getByRole('button');
       expect(button).toHaveClass('h-9');
+      expect(button).toHaveClass('px-4');
+      expect(button).toHaveClass('py-2');
     });
 
     it('should apply small size', () => {
@@ -95,7 +97,7 @@ describe('Button', () => {
 
       // Assert
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('h-10');
+      expect(button).toHaveClass('h-9');
     });
 
     it('should apply icon size', () => {

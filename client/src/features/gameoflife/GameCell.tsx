@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { AnimationMode } from './animationModes';
 
 interface GameCellProps {
   isAlive: boolean;
@@ -10,6 +11,8 @@ interface GameCellProps {
   gridThickness: number;
   showGridOverlay: boolean;
   gridLineOpacity: number;
+  animationMode: AnimationMode;
+  cellAge: number;
 }
 
 function GameCell({
@@ -22,13 +25,35 @@ function GameCell({
   gridThickness,
   showGridOverlay,
   gridLineOpacity,
+  animationMode,
+  cellAge,
 }: GameCellProps) {
-  const getRgbFromHex = (hex: string) => {
+  function getRgbFromHex(hex: string) {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return { r, g, b };
-  };
+  }
+
+  function getCellColor() {
+    if (!isAlive) {
+      return deadCellColor;
+    }
+
+    if (animationMode === 'heatmap') {
+      const maxAge = 20;
+      const normalizedAge = Math.min(cellAge / maxAge, 1);
+      
+      const aliveRgb = getRgbFromHex(aliveCellColor);
+      const r = Math.floor(aliveRgb.r + (255 - aliveRgb.r) * normalizedAge);
+      const g = Math.floor(aliveRgb.g * (1 - normalizedAge * 0.5));
+      const b = Math.floor(aliveRgb.b * (1 - normalizedAge * 0.5));
+      
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    return aliveCellColor;
+  }
 
   const borderColor = showGridOverlay
     ? (() => {
@@ -36,6 +61,8 @@ function GameCell({
         return `rgba(${r}, ${g}, ${b}, ${gridLineOpacity})`;
       })()
     : 'transparent';
+
+  const transitionClass = animationMode === 'fade' ? 'transition-colors duration-300' : '';
 
   return (
     <button
@@ -45,13 +72,13 @@ function GameCell({
         height: `${size}px`,
         minWidth: `${size}px`,
         minHeight: `${size}px`,
-        backgroundColor: isAlive ? aliveCellColor : deadCellColor,
+        backgroundColor: getCellColor(),
         borderColor: borderColor,
         borderWidth: `${gridThickness}px`,
         borderStyle: 'solid',
       }}
-      className="border transition-colors hover:opacity-80"
-      title={isAlive ? 'Alive' : 'Dead'}
+      className={`border hover:opacity-80 ${transitionClass}`}
+      title={isAlive ? `Alive (Age: ${cellAge})` : 'Dead'}
     />
   );
 }

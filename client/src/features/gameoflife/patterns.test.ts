@@ -92,5 +92,62 @@ describe('patterns', () => {
       // Assert
       expect(uniqueNames.size).toBe(names.length);
     });
+
+    it('should have valid ruleset notation if specified', () => {
+      // Arrange
+      const patternsWithRuleset = PATTERNS.filter((p) => p.ruleset);
+
+      // Act & Assert
+      patternsWithRuleset.forEach((pattern) => {
+        expect(pattern.ruleset).toMatch(/^B\d*\/S\d*$/);
+      });
+    });
+
+    it('should contain HighLife Replicator pattern', () => {
+      // Arrange & Act
+      const replicator = PATTERNS.find((p) => p.name === 'Replicator');
+
+      // Assert
+      expect(replicator).toBeDefined();
+      expect(replicator!.ruleset).toBe('B36/S23');
+      expect(replicator!.cells.length).toBeGreaterThan(0);
+    });
+
+    it('should contain Day & Night Diamond pattern', () => {
+      // Arrange & Act
+      const diamond = PATTERNS.find((p) => p.name === 'Diamond');
+
+      // Assert
+      expect(diamond).toBeDefined();
+      expect(diamond!.ruleset).toBe('B3678/S34678');
+    });
+
+    it('should contain Seeds Two Seeds pattern', () => {
+      // Arrange & Act
+      const twoSeeds = PATTERNS.find((p) => p.name === 'Two Seeds');
+
+      // Assert
+      expect(twoSeeds).toBeDefined();
+      expect(twoSeeds!.ruleset).toBe('B2/S');
+    });
+
+    it('should contain Maze Seed pattern', () => {
+      // Arrange & Act
+      const mazeSeed = PATTERNS.find((p) => p.name === 'Maze Seed');
+
+      // Assert
+      expect(mazeSeed).toBeDefined();
+      expect(mazeSeed!.ruleset).toBe('B3/S12345');
+    });
+
+    it('should have Game of Life patterns without ruleset or with B3/S23', () => {
+      // Arrange
+      const golPatterns = PATTERNS.filter((p) => !p.ruleset || p.ruleset === 'B3/S23');
+
+      // Act & Assert
+      expect(golPatterns.length).toBeGreaterThan(0);
+      const glider = golPatterns.find((p) => p.name === 'Glider');
+      expect(glider).toBeDefined();
+    });
   });
 });

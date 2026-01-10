@@ -8,11 +8,21 @@ import Analytics from './Analytics';
 import PopulationHistory from './PopulationHistory';
 import ColorCustomizer from './ColorCustomizer';
 import GridOverlayCustomizer from './GridOverlayCustomizer';
+import SaveLoadControls from './SaveLoadControls';
+import ExportControls from './ExportControls';
+import AnimationModeSelector from './AnimationModeSelector';
+import FloatingZoomControls from './FloatingZoomControls';
+import FloatingSimulationControls from './FloatingSimulationControls';
+import ShareControls from './ShareControls';
+import RulesetSelector from './RulesetSelector';
 import useGameOfLife from './useGameOfLife';
+import { useZoomPan } from './useZoomPan';
+import { getPatternFromUrl, decodeGridState } from './shareUtils';
 
 function GameOfLifeSimulator() {
   const {
     grid,
+    cellAges,
     isRunning,
     speed,
     generation,
@@ -27,7 +37,9 @@ function GameOfLifeSimulator() {
     gridThickness,
     showGridOverlay,
     gridLineOpacity,
+    animationMode,
     populationHistory,
+    ruleset,
     toggleCell,
     toggleSimulation,
     setSpeed,
@@ -36,6 +48,8 @@ function GameOfLifeSimulator() {
     loadPattern,
     setGridSize,
     step,
+    stepBack,
+    canStepBack,
     toggleBoundaryType,
     setGridColor,
     setDeadCellColor,
@@ -43,20 +57,97 @@ function GameOfLifeSimulator() {
     setGridThickness,
     setShowGridOverlay,
     setGridLineOpacity,
+    setAnimationMode,
+    setRuleset,
+    loadSavedState,
   } = useGameOfLife();
+
+  const {
+    zoom,
+    panX,
+    panY,
+    isDragging,
+    handleWheel,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleMouseLeave,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    resetView,
+    zoomIn,
+    zoomOut,
+    getHasDragged,
+  } = useZoomPan({ minZoom: 0.5, maxZoom: 10, zoomStep: 0.2 });
+
+  // Load shared pattern from URL on mount
+  React.useEffect(() => {
+    const encodedPattern = getPatternFromUrl();
+    if (encodedPattern) {
+      const decoded = decodeGridState(encodedPattern);
+      if (decoded) {
+        // Adjust grid size if needed
+        if (decoded.gridWidth !== gridWidth || decoded.gridHeight !== gridHeight) {
+          setGridSize(decoded.gridWidth, decoded.gridHeight);
+        }
+        // Load the shared state
+        loadSavedState(decoded.grid, decoded.generation);
+        
+        // Clear the URL parameter after loading
+        const url = new URL(window.location.href);
+        url.searchParams.delete('pattern');
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, []); // Only run on mount
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-blue-100 dark:border-blue-900 p-2 w-full max-h-[50vh] md:max-h-[60vh] overflow-hidden flex items-center justify-center">
-        <GameGrid
-          grid={grid}
-          onCellClick={toggleCell}
-          deadCellColor={deadCellColor}
-          aliveCellColor={aliveCellColor}
-          gridColor={gridColor}
-          gridThickness={gridThickness}
-          showGridOverlay={showGridOverlay}
-          gridLineOpacity={gridLineOpacity}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-blue-100 dark:border-blue-900 p-2 w-full">
+        <div className="relative w-full max-h-[50vh] md:max-h-[60vh] overflow-hidden flex items-center justify-center">
+          <GameGrid
+            grid={grid}
+            cellAges={cellAges}
+            onCellClick={toggleCell}
+            deadCellColor={deadCellColor}
+            aliveCellColor={aliveCellColor}
+            gridColor={gridColor}
+            gridThickness={gridThickness}
+            showGridOverlay={showGridOverlay}
+            gridLineOpacity={gridLineOpacity}
+            animationMode={animationMode}
+            zoom={zoom}
+            panX={panX}
+            panY={panY}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            isDragging={isDragging}
+            getHasDragged={getHasDragged}
+          />
+          <FloatingZoomControls
+            zoom={zoom}
+            onZoomIn={zoomIn}
+            onZoomOut={zoomOut}
+            onReset={resetView}
+          />
+        </div>
+        <FloatingSimulationControls
+          isRunning={isRunning}
+          speed={speed}
+          canStepBack={canStepBack}
+          onToggleSimulation={toggleSimulation}
+          onStep={step}
+          onStepBack={stepBack}
+          onReset={reset}
+          onRandomize={randomize}
+          onSpeedChange={setSpeed}
         />
       </div>
 
@@ -81,54 +172,45 @@ function GameOfLifeSimulator() {
       <PopulationHistory data={populationHistory} />
 
       <div className="space-y-6">
-        <div className="flex flex-wrap gap-3">
-          <Button
-            onClick={toggleSimulation}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-            size="lg"
-          >
-            {isRunning ? 'Pause' : 'Play'}
-          </Button>
-          <Button
-            onClick={step}
-            className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold"
-            size="lg"
-            disabled={isRunning}
-          >
-            Step
-          </Button>
-          <Button
-            onClick={reset}
-            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold"
-            size="lg"
-          >
-            Reset
-          </Button>
-          <Button
-            onClick={randomize}
-            className="flex-1 bg-violet-600 hover:bg-violet-700 text-white font-semibold"
-            size="lg"
-          >
-            Randomize
-          </Button>
-        </div>
-
         <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
           <label className="mb-4 block text-sm font-semibold text-gray-900 dark:text-white">
-            Speed: <span className="text-blue-600 dark:text-cyan-400">{Math.round(speed / 10)}x</span>
+            Save & Load
           </label>
-          <Slider
-            value={[speed]}
-            onValueChange={(value) => setSpeed(value[0])}
-            min={10}
-            max={200}
-            step={10}
-            className="w-full"
+          <SaveLoadControls
+            grid={grid}
+            generation={generation}
+            onLoad={loadSavedState}
           />
         </div>
 
         <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
-          <PatternSelector onLoadPattern={loadPattern} gridWidth={gridWidth} gridHeight={gridHeight} />
+          <label className="mb-4 block text-sm font-semibold text-gray-900 dark:text-white">
+            Share
+          </label>
+          <ShareControls
+            grid={grid}
+            generation={generation}
+          />
+        </div>
+
+        <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
+          <label className="mb-4 block text-sm font-semibold text-gray-900 dark:text-white">
+            Export
+          </label>
+          <ExportControls
+            grid={grid}
+            aliveCellColor={aliveCellColor}
+            deadCellColor={deadCellColor}
+          />
+        </div>
+
+        <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
+          <PatternSelector 
+            onLoadPattern={loadPattern} 
+            gridWidth={gridWidth} 
+            gridHeight={gridHeight}
+            currentRuleset={ruleset.notation}
+          />
         </div>
 
         <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
@@ -139,6 +221,16 @@ function GameOfLifeSimulator() {
             width={gridWidth}
             height={gridHeight}
             onSetSize={setGridSize}
+          />
+        </div>
+
+        <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
+          <label className="mb-4 block text-sm font-semibold text-gray-900 dark:text-white">
+            Cellular Automaton Rules
+          </label>
+          <RulesetSelector
+            currentRuleset={ruleset}
+            onRulesetChange={setRuleset}
           />
         </div>
 
@@ -186,6 +278,16 @@ function GameOfLifeSimulator() {
             onGridLineOpacityChange={setGridLineOpacity}
           />
         </div>
+
+        <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm border border-blue-100 dark:border-blue-900">
+          <label className="mb-4 block text-sm font-semibold text-gray-900 dark:text-white">
+            Animation & Visualization
+          </label>
+          <AnimationModeSelector
+            animationMode={animationMode}
+            onAnimationModeChange={setAnimationMode}
+          />
+        </div>
       </div>
 
       <div className="mt-8 rounded-xl bg-blue-50 dark:bg-gray-800 p-5 border border-blue-200 dark:border-blue-900 text-sm">
@@ -193,7 +295,7 @@ function GameOfLifeSimulator() {
           <strong className="text-gray-900 dark:text-white">How to use:</strong> Click cells to toggle them alive or dead, then press Play to start the simulation.
         </p>
         <p className="text-gray-700 dark:text-gray-300">
-          <strong className="text-gray-900 dark:text-white">Rules:</strong> A live cell with 2-3 neighbors survives, a dead cell with exactly 3 neighbors becomes alive.
+          <strong className="text-gray-900 dark:text-white">Current Rules ({ruleset.notation}):</strong> {ruleset.description}
         </p>
       </div>
     </div>

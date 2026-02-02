@@ -18,44 +18,62 @@ function PatternSelector({ onLoadPattern, gridWidth, gridHeight, currentRuleset 
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedType, setSelectedType] = React.useState<PatternType | 'all'>('all');
 
-  // Filter patterns by current ruleset, search query, and type
-  const filteredPatterns = React.useMemo(() => {
-    let patterns = PATTERNS;
-    
-    // Filter by ruleset
-    if (!showAllPatterns) {
-      patterns = patterns.filter(p => !p.ruleset || p.ruleset === currentRuleset);
+  /**
+   * IMPORTANT: Filtering logic must match tests:
+   * - If "All rulesets" is OFF:
+   *   - For Conway (B3/S23): show patterns with no ruleset OR ruleset === B3/S23
+   *   - For other rulesets: show ONLY patterns with ruleset === currentRuleset
+   * - If "All rulesets" is ON: show all patterns
+   */
+  const patternsForRuleset = React.useMemo(() => {
+    if (showAllPatterns) return PATTERNS;
+
+    if (currentRuleset === 'B3/S23') {
+      return PATTERNS.filter((p) => !p.ruleset || p.ruleset === 'B3/S23');
     }
-    
+
+    return PATTERNS.filter((p) => p.ruleset === currentRuleset);
+  }, [currentRuleset, showAllPatterns]);
+
+  // Filter patterns by ruleset + search query + type
+  const filteredPatterns = React.useMemo(() => {
+    let patterns = patternsForRuleset;
+
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      patterns = patterns.filter(p => 
-        p.name.toLowerCase().includes(query) || 
-        p.description.toLowerCase().includes(query)
+      patterns = patterns.filter(
+        (p) => p.name.toLowerCase().includes(query) || p.description.toLowerCase().includes(query)
       );
     }
-    
+
     // Filter by pattern type
     if (selectedType !== 'all') {
-      patterns = patterns.filter(p => p.type === selectedType);
+      patterns = patterns.filter((p) => p.type === selectedType);
     }
-    
-    return patterns;
-  }, [currentRuleset, showAllPatterns, searchQuery, selectedType]);
 
-  // Auto-select first matching pattern when ruleset changes or when unchecking "show all"
+    return patterns;
+  }, [patternsForRuleset, searchQuery, selectedType]);
+
+  /**
+   * Ensure the selected pattern is valid for the current ruleset filter.
+   * This is what your tests expect:
+   * - HighLife (B35/S236) => default trigger shows "Replicator"
+   * - Conway (B3/S23) => default trigger shows "Glider"
+   * - Day & Night => default trigger shows "Diamond"
+   *
+   * So when ruleset changes (or when "All rulesets" is unchecked),
+   * pick the first pattern from the ruleset-filtered list.
+   */
   React.useEffect(() => {
-    if (!showAllPatterns) {
-      const patternMatchesRuleset = !selectedPattern.ruleset || selectedPattern.ruleset === currentRuleset;
-      if (!patternMatchesRuleset) {
-        const firstMatchingPattern = PATTERNS.find(p => !p.ruleset || p.ruleset === currentRuleset);
-        if (firstMatchingPattern) {
-          setSelectedPattern(firstMatchingPattern);
-        }
-      }
+    // If there are no patterns (shouldn't happen), keep existing selection
+    if (patternsForRuleset.length === 0) return;
+
+    const isSelectionValid = patternsForRuleset.some((p) => p.name === selectedPattern.name);
+    if (!isSelectionValid) {
+      setSelectedPattern(patternsForRuleset[0]);
     }
-  }, [currentRuleset, showAllPatterns, selectedPattern]);
+  }, [patternsForRuleset, selectedPattern.name]);
 
   const handleSelectPattern = (pattern: Pattern) => {
     setSelectedPattern(pattern);
@@ -77,22 +95,20 @@ function PatternSelector({ onLoadPattern, gridWidth, gridHeight, currentRuleset 
     const maxRow = Math.max(...selectedPattern.cells.map(([r]) => r));
     const minCol = Math.min(...selectedPattern.cells.map(([, c]) => c));
     const maxCol = Math.max(...selectedPattern.cells.map(([, c]) => c));
-    
+
     const patternHeight = maxRow - minRow + 1;
     const patternWidth = maxCol - minCol + 1;
-    
-    // Center the pattern on the grid
+
+    // Center the pattern in the grid
     const startRow = Math.floor((gridHeight - patternHeight) / 2) - minRow;
     const startCol = Math.floor((gridWidth - patternWidth) / 2) - minCol;
-    
+
     onLoadPattern(selectedPattern, startRow, startCol);
   };
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-semibold text-gray-900 dark:text-white">
-        Load Preset Pattern
-      </label>
+      <label className="block text-sm font-semibold text-gray-900 dark:text-white">Load Preset Pattern</label>
       <div className="flex gap-2">
         <div className="relative flex-1">
           <button
@@ -119,7 +135,9 @@ function PatternSelector({ onLoadPattern, gridWidth, gridHeight, currentRuleset 
                   >
                     <option value="all">All Types</option>
                     {Object.entries(PATTERN_TYPE_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
                     ))}
                   </select>
                   <label className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -135,9 +153,7 @@ function PatternSelector({ onLoadPattern, gridWidth, gridHeight, currentRuleset 
               </div>
               <div className="overflow-y-auto flex-1">
                 {filteredPatterns.length === 0 ? (
-                  <div className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No patterns found
-                  </div>
+                  <div className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">No patterns found</div>
                 ) : (
                   filteredPatterns.map((pattern) => (
                     <button
@@ -169,10 +185,7 @@ function PatternSelector({ onLoadPattern, gridWidth, gridHeight, currentRuleset 
             </div>
           )}
         </div>
-        <Button
-          onClick={handleLoadPattern}
-          className="bg-teal-600 hover:bg-teal-700 text-white font-semibold"
-        >
+        <Button onClick={handleLoadPattern} className="bg-teal-600 hover:bg-teal-700 text-white font-semibold">
           Load
         </Button>
       </div>

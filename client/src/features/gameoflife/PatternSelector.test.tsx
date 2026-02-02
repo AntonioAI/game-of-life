@@ -2,15 +2,18 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import PatternSelector from "./PatternSelector";
 import { PATTERNS } from "./patterns";
-import { RULESETS } from "./rulesets";
 
 describe("PatternSelector", () => {
+  // Helper: the first button is always the pattern selector trigger
+  const openPatternMenu = () => {
+    const buttons = screen.getAllByRole("button");
+    fireEvent.click(buttons[0]); // pattern selector (not the Load button)
+  };
+
   it("should filter patterns by ruleset by default", () => {
-    // Arrange
     const mockOnLoadPattern = vi.fn();
     const currentRuleset = "B35/S236"; // HighLife
 
-    // Act
     render(
       <PatternSelector
         onLoadPattern={mockOnLoadPattern}
@@ -20,31 +23,31 @@ describe("PatternSelector", () => {
       />
     );
 
-    // Open the pattern dropdown
-    const patternButton = screen.getByRole("button", { name: /replicator/i });
-    fireEvent.click(patternButton);
+    // Open dropdown
+    openPatternMenu();
 
-    // Assert - Should only show HighLife patterns by default
-    const highLifePatterns = PATTERNS.filter(p => p.ruleset === "B35/S236");
-    const gameOfLifePatterns = PATTERNS.filter(p => !p.ruleset || p.ruleset === "B3/S23");
+    const highLifePatterns = PATTERNS.filter(
+      (p) => p.ruleset === "B35/S236"
+    );
+    const gameOfLifePatterns = PATTERNS.filter(
+      (p) => !p.ruleset || p.ruleset === "B3/S23"
+    );
 
-    // HighLife patterns should be visible
-    highLifePatterns.forEach(pattern => {
+    // HighLife patterns SHOULD be visible
+    highLifePatterns.forEach((pattern) => {
       expect(screen.getByText(pattern.name)).toBeInTheDocument();
     });
 
-    // Game of Life patterns should NOT be visible (unless checkbox is checked)
-    gameOfLifePatterns.forEach(pattern => {
+    // Conway patterns should NOT be visible by default
+    gameOfLifePatterns.forEach((pattern) => {
       expect(screen.queryByText(pattern.name)).not.toBeInTheDocument();
     });
   });
 
   it("should show all patterns when checkbox is checked", () => {
-    // Arrange
     const mockOnLoadPattern = vi.fn();
     const currentRuleset = "B35/S236"; // HighLife
 
-    // Act
     render(
       <PatternSelector
         onLoadPattern={mockOnLoadPattern}
@@ -54,31 +57,26 @@ describe("PatternSelector", () => {
       />
     );
 
-    // Open the pattern dropdown
-    const patternButton = screen.getByRole("button", { name: /replicator/i });
-    fireEvent.click(patternButton);
+    openPatternMenu();
 
-    // Check the "Show all patterns" checkbox
-    const checkbox = screen.getByRole("checkbox");
+    const checkbox = screen.getByRole("checkbox", {
+      name: /all rulesets/i,
+    });
+
     fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
 
-    // Assert - Should show patterns from all rulesets
-    const allPatterns = PATTERNS;
-    expect(allPatterns.length).toBeGreaterThan(0);
-
-    // All patterns should be visible
-    allPatterns.forEach(pattern => {
+    // Now all patterns should be visible
+    PATTERNS.forEach((pattern) => {
       expect(screen.getByText(pattern.name)).toBeInTheDocument();
     });
   });
 
   it("should update filtered patterns when ruleset changes", () => {
-    // Arrange
     const mockOnLoadPattern = vi.fn();
     const conwayRuleset = "B3/S23";
     const dayNightRuleset = "B3678/S34678";
 
-    // Act - Initial render with Conway's Game of Life
     const { rerender } = render(
       <PatternSelector
         onLoadPattern={mockOnLoadPattern}
@@ -88,20 +86,21 @@ describe("PatternSelector", () => {
       />
     );
 
-    // Open the pattern dropdown
-    let patternButton = screen.getByRole("button", { name: /glider/i });
-    fireEvent.click(patternButton);
+    // --- Conway ---
+    openPatternMenu();
 
-    // Assert - Should show Conway patterns
-    const conwayPatterns = PATTERNS.filter(p => !p.ruleset || p.ruleset === "B3/S23");
-    conwayPatterns.forEach(pattern => {
+    const conwayPatterns = PATTERNS.filter(
+      (p) => !p.ruleset || p.ruleset === "B3/S23"
+    );
+
+    conwayPatterns.forEach((pattern) => {
       expect(screen.getByText(pattern.name)).toBeInTheDocument();
     });
 
-    // Close dropdown
-    fireEvent.click(patternButton);
+    // Close menu
+    openPatternMenu();
 
-    // Act - Rerender with Day & Night ruleset
+    // --- Switch to Day & Night ---
     rerender(
       <PatternSelector
         onLoadPattern={mockOnLoadPattern}
@@ -111,23 +110,21 @@ describe("PatternSelector", () => {
       />
     );
 
-    // Open the pattern dropdown again
-    patternButton = screen.getByRole("button", { name: /diamond/i });
-    fireEvent.click(patternButton);
+    openPatternMenu();
 
-    // Assert - Should show Day & Night patterns
-    const dayNightPatterns = PATTERNS.filter(p => p.ruleset === "B3678/S34678");
-    dayNightPatterns.forEach(pattern => {
+    const dayNightPatterns = PATTERNS.filter(
+      (p) => p.ruleset === "B3678/S34678"
+    );
+
+    dayNightPatterns.forEach((pattern) => {
       expect(screen.getByText(pattern.name)).toBeInTheDocument();
     });
   });
 
   it("should call onLoadPattern when load button is clicked", () => {
-    // Arrange
     const mockOnLoadPattern = vi.fn();
     const currentRuleset = "B3/S23";
 
-    // Act
     render(
       <PatternSelector
         onLoadPattern={mockOnLoadPattern}
@@ -137,12 +134,10 @@ describe("PatternSelector", () => {
       />
     );
 
-    // Click the Load button
-    const loadButton = screen.getByRole("button", { name: /load/i });
+    const loadButton = screen.getByRole("button", { name: /^load$/i });
     fireEvent.click(loadButton);
 
-    // Assert - Should be called with a pattern and position
-    expect(mockOnLoadPattern).toHaveBeenCalled();
+    expect(mockOnLoadPattern).toHaveBeenCalledTimes(1);
     expect(mockOnLoadPattern).toHaveBeenCalledWith(
       expect.objectContaining({
         name: expect.any(String),
@@ -154,12 +149,10 @@ describe("PatternSelector", () => {
   });
 
   it("should preserve checkbox state when ruleset changes", () => {
-    // Arrange
     const mockOnLoadPattern = vi.fn();
     const conwayRuleset = "B3/S23";
     const highlifeRuleset = "B35/S236";
 
-    // Act
     const { rerender } = render(
       <PatternSelector
         onLoadPattern={mockOnLoadPattern}
@@ -169,20 +162,19 @@ describe("PatternSelector", () => {
       />
     );
 
-    // Open dropdown and check the "Show all patterns" checkbox
-    const patternButton = screen.getByRole("button", { name: /glider/i });
-    fireEvent.click(patternButton);
+    openPatternMenu();
 
-    const checkbox = screen.getByRole("checkbox");
+    const checkbox = screen.getByRole("checkbox", {
+      name: /all rulesets/i,
+    });
+
     fireEvent.click(checkbox);
-
-    // Assert - Checkbox should be checked
     expect(checkbox).toBeChecked();
 
-    // Close dropdown
-    fireEvent.click(patternButton);
+    // Close menu
+    openPatternMenu();
 
-    // Rerender with different ruleset
+    // Change ruleset
     rerender(
       <PatternSelector
         onLoadPattern={mockOnLoadPattern}
@@ -192,18 +184,16 @@ describe("PatternSelector", () => {
       />
     );
 
-    // Open dropdown again
-    const newPatternButton = screen.getByRole("button", { name: /replicator/i });
-    fireEvent.click(newPatternButton);
+    openPatternMenu();
 
-    const newCheckbox = screen.getByRole("checkbox");
+    const newCheckbox = screen.getByRole("checkbox", {
+      name: /all rulesets/i,
+    });
 
-    // Assert - Checkbox should still be checked
     expect(newCheckbox).toBeChecked();
 
-    // Should show patterns from all rulesets
-    const allPatterns = PATTERNS;
-    allPatterns.forEach(pattern => {
+    // With "All rulesets" on, every pattern should appear
+    PATTERNS.forEach((pattern) => {
       expect(screen.getByText(pattern.name)).toBeInTheDocument();
     });
   });

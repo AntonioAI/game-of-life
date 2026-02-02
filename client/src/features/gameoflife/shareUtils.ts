@@ -12,8 +12,13 @@ export interface EncodedState {
 }
 
 /**
- * Encodes a grid state into a compact base64 string
+ * Encodes a grid state into a compact base64url string
  * Uses run-length encoding to compress consecutive cells
+ *
+ * Run format (unambiguous with delimiter):
+ *   <value><countBase36>|
+ * Example:
+ *   1a|0f|  => 10 trues, 15 falses
  */
 export function encodeGridState(
   grid: Grid,
@@ -21,117 +26,109 @@ export function encodeGridState(
 ): string {
   const height = grid.length;
   const width = grid[0]?.length || 0;
-  
+
+  const state = {
+    w: width,
+    h: height,
+    g: generation,
+    d: "",
+  };
+
   if (height === 0 || width === 0) {
-    const state = {
-      w: width,
-      h: height,
-      g: generation,
-      d: ''
-    };
-    const jsonStr = JSON.stringify(state);
-    return btoa(jsonStr);
+    return base64UrlEncode(JSON.stringify(state));
   }
-  
-  // Flatten grid to binary string with run-length encoding
-  let binaryStr = '';
+
+  // Flatten grid row-major and RLE
+  let encodedRuns = "";
   let currentValue = grid[0][0];
   let count = 1;
-  
+
   for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
-      // Skip first cell since we already initialized with it
       if (row === 0 && col === 0) continue;
-      
+
       const cellValue = grid[row][col];
-      
       if (cellValue === currentValue) {
         count++;
       } else {
-        // Write previous run
-        binaryStr += encodeRun(count, currentValue);
+        encodedRuns += encodeRun(count, currentValue);
         currentValue = cellValue;
         count = 1;
       }
     }
   }
-  
-  // Write final run
-  binaryStr += encodeRun(count, currentValue);
-  
-  // Create state object
-  const state = {
-    w: width,
-    h: height,
-    g: generation,
-    d: binaryStr
-  };
-  
-  // Convert to base64
-  const jsonStr = JSON.stringify(state);
-  return btoa(jsonStr);
+
+  encodedRuns += encodeRun(count, currentValue);
+  state.d = encodedRuns;
+
+  return base64UrlEncode(JSON.stringify(state));
 }
 
 /**
- * Encodes a run of cells (count + value)
- * Format: count as base-36 followed by 0 or 1
+ * Encodes a run of cells
+ * Format: <value><countBase36>|
  */
 function encodeRun(count: number, value: boolean): string {
-  return count.toString(36) + (value ? '1' : '0');
+  return (value ? "1" : "0") + count.toString(36) + "|";
 }
 
 /**
- * Decodes a base64 encoded grid state
+ * Decodes a base64url encoded grid state
  */
 export function decodeGridState(encoded: string): EncodedState | null {
   try {
-    const jsonStr = atob(encoded);
+    const jsonStr = base64UrlDecode(encoded);
     const state = JSON.parse(jsonStr);
-    
-    const width = state.w;
-    const height = state.h;
-    const generation = state.g || 0;
-    const data = state.d;
-    
-    // Decode run-length encoded data
-    const grid: Grid = Array(height)
-      .fill(null)
-      .map(() => Array(width).fill(false));
-    
+
+    const width: number = state.w;
+    const height: number = state.h;
+    const generation: number = state.g ?? 0;
+    const data: string = state.d ?? "";
+
+    if (!Number.isInteger(width) || !Number.isInteger(height) || width < 0 || height < 0) {
+      return null;
+    }
+
+    const grid: Grid = Array.from({ length: height }, () => Array(width).fill(false));
+
+    const totalCells = width * height;
     let cellIndex = 0;
-    let i = 0;
-    
-     while (i < data.length && cellIndex < width * height) {
-       // Read count (base-36 number)
-       let countStr = '';
-       while (i < data.length && data[i] !== '0' && data[i] !== '1') {
-         countStr += data[i];
-         i++;
-       }
-       
-       if (i >= data.length || countStr === '') break;
-       
-       const count = parseInt(countStr, 36);
-       const value = data[i] === '1';
-       i++;
-       
-       // Fill cells
-       for (let j = 0; j < count && cellIndex < width * height; j++) {
-         const row = Math.floor(cellIndex / width);
-         const col = cellIndex % width;
-         grid[row][col] = value;
-         cellIndex++;
-       }
-     }
-    
-    return {
-      grid,
-      generation,
-      gridWidth: width,
-      gridHeight: height
-    };
+
+    const runs = data.split("|").filter(Boolean);
+
+    for (const run of runs) {
+      if (cellIndex >= totalCells) break;
+
+      const valueChar = run[0];
+      const countStr = run.slice(1);
+
+      if ((valueChar !== "0" && valueChar !== "1") || countStr.length === 0) {
+        return null;
+      }
+
+      const value = valueChar === "1";
+      const count = parseInt(countStr, 36);
+
+      if (!Number.isFinite(count) || count <= 0) {
+        return null;
+      }
+
+      for (let j = 0; j < count && cellIndex < totalCells; j++) {
+        const row = Math.floor(cellIndex / width);
+        const col = cellIndex % width;
+        grid[row][col] = value;
+        cellIndex++;
+      }
+    }
+
+    // If we didn't fill exactly, something went wrong
+    if (cellIndex !== totalCells) {
+      return null;
+    }
+
+    return { grid, generation, gridWidth: width, gridHeight: height };
   } catch (error) {
-    console.error('Failed to decode grid state:', error);
+    console.error("Failed to decode grid state:", error);
     return null;
   }
 }
@@ -150,7 +147,21 @@ export function generateShareUrl(grid: Grid, generation: number = 0): string {
  */
 export function getPatternFromUrl(): string | null {
   const params = new URLSearchParams(window.location.search);
-  return params.get('pattern');
+  return params.get("pattern");
+}
+
+/**
+ * base64url helpers (URL safe: - and _ instead of + and /, no padding)
+ */
+function base64UrlEncode(str: string): string {
+  const b64 = btoa(str);
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlDecode(b64url: string): string {
+  const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = b64 + "===".slice((b64.length + 3) % 4);
+  return atob(padded);
 }
 
 /**
@@ -163,15 +174,15 @@ export function copyToClipboard(text: string): Promise<void> {
   
   // Fallback for older browsers
   return new Promise((resolve, reject) => {
-    const textarea = document.createElement('textarea');
+    const textarea = document.createElement("textarea");
     textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
     document.body.appendChild(textarea);
     textarea.select();
     
     try {
-      document.execCommand('copy');
+      document.execCommand("copy");
       document.body.removeChild(textarea);
       resolve();
     } catch (error) {

@@ -1,5 +1,10 @@
 /**
  * Utilities for encoding and decoding grid states to shareable URLs
+ *
+ * Key design choices:
+ * - Run-length encoding (RLE) with an unambiguous delimiter (`|`)
+ * - base64url encoding (URL-safe: no + / = characters)
+ * - decodeGridState returns null for invalid input WITHOUT logging to stderr
  */
 
 type Grid = boolean[][];
@@ -12,22 +17,22 @@ export interface EncodedState {
 }
 
 /**
- * Encodes a grid state into a compact base64url string
- * Uses run-length encoding to compress consecutive cells
+ * Encodes a grid state into a compact base64url string.
+ * Uses run-length encoding to compress consecutive cells.
  *
- * Run format (unambiguous with delimiter):
+ * RLE run format (unambiguous):
  *   <value><countBase36>|
- * Example:
- *   1a|0f|  => 10 trues, 15 falses
+ * where:
+ *   value is '0' (dead) or '1' (alive)
+ *   countBase36 is count.toString(36)
+ *
+ * Example: 10 alive, then 15 dead => "1a|0f|"
  */
-export function encodeGridState(
-  grid: Grid,
-  generation: number = 0
-): string {
+export function encodeGridState(grid: Grid, generation: number = 0): string {
   const height = grid.length;
   const width = grid[0]?.length || 0;
 
-  const state = {
+  const state: { w: number; h: number; g: number; d: string } = {
     w: width,
     h: height,
     g: generation,
@@ -38,7 +43,14 @@ export function encodeGridState(
     return base64UrlEncode(JSON.stringify(state));
   }
 
-  // Flatten grid row-major and RLE
+  // Ensure grid is rectangular
+  for (let row = 0; row < height; row++) {
+    if (grid[row].length !== width) {
+      throw new Error("encodeGridState: grid is not rectangular");
+    }
+  }
+
+  // RLE over row-major order
   let encodedRuns = "";
   let currentValue = grid[0][0];
   let count = 1;
@@ -58,14 +70,15 @@ export function encodeGridState(
     }
   }
 
+  // Final run
   encodedRuns += encodeRun(count, currentValue);
-  state.d = encodedRuns;
 
+  state.d = encodedRuns;
   return base64UrlEncode(JSON.stringify(state));
 }
 
 /**
- * Encodes a run of cells
+ * Encodes a run of cells.
  * Format: <value><countBase36>|
  */
 function encodeRun(count: number, value: boolean): string {
@@ -73,28 +86,39 @@ function encodeRun(count: number, value: boolean): string {
 }
 
 /**
- * Decodes a base64url encoded grid state
+ * Decodes a base64url encoded grid state.
+ * Returns null if the string is invalid or cannot be decoded safely.
  */
 export function decodeGridState(encoded: string): EncodedState | null {
   try {
     const jsonStr = base64UrlDecode(encoded);
-    const state = JSON.parse(jsonStr);
+    if (jsonStr == null) return null;
 
-    const width: number = state.w;
-    const height: number = state.h;
-    const generation: number = state.g ?? 0;
-    const data: string = state.d ?? "";
+    const state = JSON.parse(jsonStr) as { w: unknown; h: unknown; g?: unknown; d?: unknown };
 
-    if (!Number.isInteger(width) || !Number.isInteger(height) || width < 0 || height < 0) {
-      return null;
-    }
+    const width = state.w;
+    const height = state.h;
+    const generation = (state.g as number | undefined) ?? 0;
+    const data = (state.d as string | undefined) ?? "";
 
+    if (!Number.isInteger(width) || !Number.isInteger(height)) return null;
+    if (width < 0 || height < 0) return null;
+    if (!Number.isInteger(generation)) return null;
+    if (typeof data !== "string") return null;
+
+    // Create empty grid default false
     const grid: Grid = Array.from({ length: height }, () => Array(width).fill(false));
 
+    // If empty grid, accept empty data
     const totalCells = width * height;
-    let cellIndex = 0;
+    if (totalCells === 0) {
+      return { grid, generation, gridWidth: width, gridHeight: height };
+    }
 
+    // Parse runs: split by delimiter
     const runs = data.split("|").filter(Boolean);
+
+    let cellIndex = 0;
 
     for (const run of runs) {
       if (cellIndex >= totalCells) break;
@@ -106,12 +130,10 @@ export function decodeGridState(encoded: string): EncodedState | null {
         return null;
       }
 
-      const value = valueChar === "1";
       const count = parseInt(countStr, 36);
+      if (!Number.isFinite(count) || count <= 0) return null;
 
-      if (!Number.isFinite(count) || count <= 0) {
-        return null;
-      }
+      const value = valueChar === "1";
 
       for (let j = 0; j < count && cellIndex < totalCells; j++) {
         const row = Math.floor(cellIndex / width);
@@ -121,20 +143,23 @@ export function decodeGridState(encoded: string): EncodedState | null {
       }
     }
 
-    // If we didn't fill exactly, something went wrong
-    if (cellIndex !== totalCells) {
-      return null;
-    }
+    // Must fill exactly the expected number of cells
+    if (cellIndex !== totalCells) return null;
 
-    return { grid, generation, gridWidth: width, gridHeight: height };
-  } catch (error) {
-    console.error("Failed to decode grid state:", error);
+    return {
+      grid,
+      generation,
+      gridWidth: width,
+      gridHeight: height,
+    };
+  } catch {
+    // Important: do NOT log to stderr here; invalid URLs are normal user input.
     return null;
   }
 }
 
 /**
- * Generates a shareable URL with the encoded grid state
+ * Generates a shareable URL with the encoded grid state.
  */
 export function generateShareUrl(grid: Grid, generation: number = 0): string {
   const encoded = encodeGridState(grid, generation);
@@ -143,7 +168,7 @@ export function generateShareUrl(grid: Grid, generation: number = 0): string {
 }
 
 /**
- * Extracts the encoded pattern from the current URL
+ * Extracts the encoded pattern from the current URL.
  */
 export function getPatternFromUrl(): string | null {
   const params = new URLSearchParams(window.location.search);
@@ -151,27 +176,13 @@ export function getPatternFromUrl(): string | null {
 }
 
 /**
- * base64url helpers (URL safe: - and _ instead of + and /, no padding)
- */
-function base64UrlEncode(str: string): string {
-  const b64 = btoa(str);
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
-function base64UrlDecode(b64url: string): string {
-  const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = b64 + "===".slice((b64.length + 3) % 4);
-  return atob(padded);
-}
-
-/**
- * Copies text to clipboard
+ * Copies text to clipboard.
  */
 export function copyToClipboard(text: string): Promise<void> {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     return navigator.clipboard.writeText(text);
   }
-  
+
   // Fallback for older browsers
   return new Promise((resolve, reject) => {
     const textarea = document.createElement("textarea");
@@ -180,7 +191,7 @@ export function copyToClipboard(text: string): Promise<void> {
     textarea.style.opacity = "0";
     document.body.appendChild(textarea);
     textarea.select();
-    
+
     try {
       document.execCommand("copy");
       document.body.removeChild(textarea);
@@ -190,4 +201,27 @@ export function copyToClipboard(text: string): Promise<void> {
       reject(error);
     }
   });
+}
+
+/**
+ * base64url helpers (URL-safe: - and _ instead of + and /, no padding =)
+ * We validate input for base64url alphabet before decoding to avoid atob throwing.
+ */
+function base64UrlEncode(str: string): string {
+  const b64 = btoa(str);
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlDecode(b64url: string): string | null {
+  // base64url allowed chars are A-Z a-z 0-9 - _
+  if (!/^[A-Za-z0-9_-]*$/.test(b64url)) return null;
+
+  const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = b64 + "===".slice((b64.length + 3) % 4);
+
+  try {
+    return atob(padded);
+  } catch {
+    return null;
+  }
 }

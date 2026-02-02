@@ -22,22 +22,34 @@ export function encodeGridState(
   const height = grid.length;
   const width = grid[0]?.length || 0;
   
+  if (height === 0 || width === 0) {
+    const state = {
+      w: width,
+      h: height,
+      g: generation,
+      d: ''
+    };
+    const jsonStr = JSON.stringify(state);
+    return btoa(jsonStr);
+  }
+  
   // Flatten grid to binary string with run-length encoding
   let binaryStr = '';
-  let currentValue = false;
-  let count = 0;
+  let currentValue = grid[0][0];
+  let count = 1;
   
   for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
+      // Skip first cell since we already initialized with it
+      if (row === 0 && col === 0) continue;
+      
       const cellValue = grid[row][col];
       
       if (cellValue === currentValue) {
         count++;
       } else {
         // Write previous run
-        if (count > 0) {
-          binaryStr += encodeRun(count, currentValue);
-        }
+        binaryStr += encodeRun(count, currentValue);
         currentValue = cellValue;
         count = 1;
       }
@@ -45,9 +57,7 @@ export function encodeGridState(
   }
   
   // Write final run
-  if (count > 0) {
-    binaryStr += encodeRun(count, currentValue);
-  }
+  binaryStr += encodeRun(count, currentValue);
   
   // Create state object
   const state = {

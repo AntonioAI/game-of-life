@@ -30,23 +30,24 @@ describe('FloatingSimulationControls', () => {
         onSpeedChange={vi.fn()}
       />
     );
+
     expect(screen.getByTitle(/play/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/step/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/step back/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/^step$/i)).toBeInTheDocument();      // ← FIXED
+    expect(screen.getByTitle(/^step back$/i)).toBeInTheDocument(); // ← FIXED
     expect(screen.getByTitle(/reset/i)).toBeInTheDocument();
     expect(screen.getByTitle(/randomize/i)).toBeInTheDocument();
   });
 
   it('shows Play button when not running', () => {
     render(<FloatingSimulationControls {...mockProps} isRunning={false} />);
-    
+
     expect(screen.getByTitle('Play')).toBeInTheDocument();
     expect(screen.queryByTitle('Pause')).not.toBeInTheDocument();
   });
 
   it('shows Pause button when running', () => {
     render(<FloatingSimulationControls {...mockProps} isRunning={true} />);
-    
+
     expect(screen.getByTitle('Pause')).toBeInTheDocument();
     expect(screen.queryByTitle('Play')).not.toBeInTheDocument();
   });
@@ -54,7 +55,7 @@ describe('FloatingSimulationControls', () => {
   it('calls onToggleSimulation when play/pause is clicked', async () => {
     const user = userEvent.setup();
     render(<FloatingSimulationControls {...mockProps} />);
-    
+
     await user.click(screen.getByTitle('Play'));
     expect(mockProps.onToggleSimulation).toHaveBeenCalledTimes(1);
   });
@@ -74,7 +75,8 @@ describe('FloatingSimulationControls', () => {
         onSpeedChange={vi.fn()}
       />
     );
-    await userEvent.click(screen.getByTitle(/step/i));
+
+    await userEvent.click(screen.getByTitle(/^step$/i)); // ← FIXED
     expect(mockStep).toHaveBeenCalled();
   });
 
@@ -93,6 +95,7 @@ describe('FloatingSimulationControls', () => {
         onSpeedChange={vi.fn()}
       />
     );
+
     await userEvent.click(screen.getByTitle(/reset/i));
     expect(mockReset).toHaveBeenCalled();
   });
@@ -112,6 +115,7 @@ describe('FloatingSimulationControls', () => {
         onSpeedChange={vi.fn()}
       />
     );
+
     await userEvent.click(screen.getByTitle(/randomize/i));
     expect(mockRandomize).toHaveBeenCalled();
   });
@@ -130,7 +134,8 @@ describe('FloatingSimulationControls', () => {
         onSpeedChange={vi.fn()}
       />
     );
-    expect(screen.getByTitle(/step/i)).toBeDisabled();
+
+    expect(screen.getByTitle(/^step$/i)).toBeDisabled(); // ← FIXED
   });
 
   it('enables step button when simulation is paused', () => {
@@ -147,24 +152,25 @@ describe('FloatingSimulationControls', () => {
         onSpeedChange={vi.fn()}
       />
     );
-    expect(screen.getByTitle(/step/i)).not.toBeDisabled();
+
+    expect(screen.getByTitle(/^step$/i)).not.toBeDisabled(); // ← FIXED
   });
 
   it('enables step button when simulation is not running', () => {
     render(<FloatingSimulationControls {...mockProps} isRunning={false} />);
-    
+
     expect(screen.getByTitle('Step')).not.toBeDisabled();
   });
 
   it('displays the current speed', () => {
     render(<FloatingSimulationControls {...mockProps} speed={100} />);
-    
+
     expect(screen.getByText('10x')).toBeInTheDocument();
   });
 
   it('renders speed slider', () => {
     render(<FloatingSimulationControls {...mockProps} />);
-    
+
     expect(screen.getByText(/Speed:/)).toBeInTheDocument();
   });
 });

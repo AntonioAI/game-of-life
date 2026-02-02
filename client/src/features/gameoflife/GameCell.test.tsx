@@ -4,154 +4,265 @@ import userEvent from '@testing-library/user-event';
 import GameCell from './GameCell';
 
 describe('GameCell', () => {
-  describe('rendering', () => {
-    it('should render a cell', () => {
-      // Arrange
-      const onToggle = vi.fn();
+  it('should render a button', () => {
+    // Arrange
+    const mockOnClick = vi.fn();
 
-      // Act
-      render(
-        <GameCell
-          isAlive={false}
-          onClick={onToggle}
-          size={20}
-          deadCellColor="#ffffff"
-          aliveCellColor="#000000"
-          gridColor="#cccccc"
-          gridThickness={1}
-          showGridOverlay={true}
-          gridLineOpacity={0.5}
-        />
-      );
+    // Act
+    render(
+      <GameCell
+        isAlive={false}
+        onClick={mockOnClick}
+        size={16}
+        deadCellColor="#f3f4f6"
+        aliveCellColor="#06b6d4"
+        gridColor="#93c5fd"
+        gridThickness={1}
+        showGridOverlay={true}
+        gridLineOpacity={0.5}
+        animationMode="none"
+        cellAge={0}
+      />
+    );
 
-      // Assert
-      expect(screen.getByRole('button')).toBeInTheDocument();
-    });
-
-    it('should apply dead cell color when not alive', () => {
-      // Arrange
-      const deadColor = '#ffffff';
-      const onToggle = vi.fn();
-
-      // Act
-      render(
-        <GameCell
-          isAlive={false}
-          onClick={onToggle}
-          size={20}
-          deadCellColor={deadColor}
-          aliveCellColor="#000000"
-          gridColor="#cccccc"
-          gridThickness={1}
-          showGridOverlay={true}
-          gridLineOpacity={0.5}
-        />
-      );
-
-      // Assert
-      const cell = screen.getByRole('button');
-      expect(cell).toHaveStyle({ backgroundColor: deadColor });
-    });
-
-    it('should apply alive cell color when alive', () => {
-      // Arrange
-      const aliveColor = '#000000';
-      const onToggle = vi.fn();
-
-      // Act
-      render(
-        <GameCell
-          isAlive={true}
-          onClick={onToggle}
-          size={20}
-          deadCellColor="#ffffff"
-          aliveCellColor={aliveColor}
-          gridColor="#cccccc"
-          gridThickness={1}
-          showGridOverlay={true}
-          gridLineOpacity={0.5}
-        />
-      );
-
-      // Assert
-      const cell = screen.getByRole('button');
-      expect(cell).toHaveStyle({ backgroundColor: aliveColor });
-    });
-
-    it('should set cell size correctly', () => {
-      // Arrange
-      const size = 30;
-      const onToggle = vi.fn();
-
-      // Act
-      render(
-        <GameCell
-          isAlive={false}
-          onClick={onToggle}
-          size={size}
-          deadCellColor="#ffffff"
-          aliveCellColor="#000000"
-          gridColor="#cccccc"
-          gridThickness={1}
-          showGridOverlay={true}
-          gridLineOpacity={0.5}
-        />
-      );
-
-      // Assert
-      const cell = screen.getByRole('button');
-      expect(cell).toHaveStyle({ width: `${size}px`, height: `${size}px` });
-    });
-
-    it('should show title attribute based on alive state', () => {
-      // Arrange
-      const onToggle = vi.fn();
-
-      // Act
-      render(
-        <GameCell
-          isAlive={true}
-          onClick={onToggle}
-          size={20}
-          deadCellColor="#ffffff"
-          aliveCellColor="#000000"
-          gridColor="#cccccc"
-          gridThickness={1}
-          showGridOverlay={true}
-          gridLineOpacity={0.5}
-        />
-      );
-
-      // Assert
-      const cell = screen.getByRole('button');
-      expect(cell).toHaveAttribute('title', 'Alive');
-    });
+    // Assert
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  describe('interactions', () => {
-    it('should call onClick when clicked', async () => {
-      // Arrange
-      const user = userEvent.setup();
-      const onToggle = vi.fn();
+  it('should call onClick when clicked', async () => {
+    // Arrange
+    const mockOnClick = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <GameCell
+        isAlive={false}
+        onClick={mockOnClick}
+        size={16}
+        deadCellColor="#f3f4f6"
+        aliveCellColor="#06b6d4"
+        gridColor="#93c5fd"
+        gridThickness={1}
+        showGridOverlay={true}
+        gridLineOpacity={0.5}
+        animationMode="none"
+        cellAge={0}
+      />
+    );
 
-      // Act
-      render(
-        <GameCell
-          isAlive={false}
-          onClick={onToggle}
-          size={20}
-          deadCellColor="#ffffff"
-          aliveCellColor="#000000"
-          gridColor="#cccccc"
-          gridThickness={1}
-          showGridOverlay={true}
-          gridLineOpacity={0.5}
-        />
-      );
-      await user.click(screen.getByRole('button'));
+    // Act
+    await user.click(screen.getByRole('button'));
 
-      // Assert
-      expect(onToggle).toHaveBeenCalledOnce();
-    });
+    // Assert
+    expect(mockOnClick).toHaveBeenCalledOnce();
+  });
+
+  it('should apply correct background color when dead', () => {
+    // Arrange
+    const mockOnClick = vi.fn();
+
+    // Act
+    const { container } = render(
+      <GameCell
+        isAlive={false}
+        onClick={mockOnClick}
+        size={16}
+        deadCellColor="#f3f4f6"
+        aliveCellColor="#06b6d4"
+        gridColor="#93c5fd"
+        gridThickness={1}
+        showGridOverlay={true}
+        gridLineOpacity={0.5}
+        animationMode="none"
+        cellAge={0}
+      />
+    );
+
+    // Assert
+    const button = container.querySelector('button');
+    expect(button).toHaveStyle({ backgroundColor: '#f3f4f6' });
+  });
+
+  it('should apply correct background color when alive with no animation', () => {
+    // Arrange
+    const mockOnClick = vi.fn();
+
+    // Act
+    const { container } = render(
+      <GameCell
+        isAlive={true}
+        onClick={mockOnClick}
+        size={16}
+        deadCellColor="#f3f4f6"
+        aliveCellColor="#06b6d4"
+        gridColor="#93c5fd"
+        gridThickness={1}
+        showGridOverlay={true}
+        gridLineOpacity={0.5}
+        animationMode="none"
+        cellAge={5}
+      />
+    );
+
+    // Assert
+    const button = container.querySelector('button');
+    expect(button).toHaveStyle({ backgroundColor: '#06b6d4' });
+  });
+
+  it('should apply correct size', () => {
+    // Arrange
+    const mockOnClick = vi.fn();
+
+    // Act
+    const { container } = render(
+      <GameCell
+        isAlive={false}
+        onClick={mockOnClick}
+        size={32}
+        deadCellColor="#f3f4f6"
+        aliveCellColor="#06b6d4"
+        gridColor="#93c5fd"
+        gridThickness={1}
+        showGridOverlay={true}
+        gridLineOpacity={0.5}
+        animationMode="none"
+        cellAge={0}
+      />
+    );
+
+    // Assert
+    const button = container.querySelector('button');
+    expect(button).toHaveStyle({ width: '32px', height: '32px' });
+  });
+
+  it('should apply fade animation class when fade mode is enabled', () => {
+    // Arrange
+    const mockOnClick = vi.fn();
+
+    // Act
+    const { container } = render(
+      <GameCell
+        isAlive={true}
+        onClick={mockOnClick}
+        size={16}
+        deadCellColor="#f3f4f6"
+        aliveCellColor="#06b6d4"
+        gridColor="#93c5fd"
+        gridThickness={1}
+        showGridOverlay={true}
+        gridLineOpacity={0.5}
+        animationMode="fade"
+        cellAge={0}
+      />
+    );
+
+    // Assert
+    const button = container.querySelector('button');
+    expect(button?.className).toContain('transition-colors');
+  });
+
+  it('should not apply fade animation class when mode is none', () => {
+    // Arrange
+    const mockOnClick = vi.fn();
+
+    // Act
+    const { container } = render(
+      <GameCell
+        isAlive={true}
+        onClick={mockOnClick}
+        size={16}
+        deadCellColor="#f3f4f6"
+        aliveCellColor="#06b6d4"
+        gridColor="#93c5fd"
+        gridThickness={1}
+        showGridOverlay={true}
+        gridLineOpacity={0.5}
+        animationMode="none"
+        cellAge={0}
+      />
+    );
+
+    // Assert
+    const button = container.querySelector('button');
+    expect(button?.className).not.toContain('transition-colors');
+  });
+
+  it('should use heatmap colors based on cell age', () => {
+    // Arrange
+    const mockOnClick = vi.fn();
+
+    // Act
+    const { container } = render(
+      <GameCell
+        isAlive={true}
+        onClick={mockOnClick}
+        size={16}
+        deadCellColor="#f3f4f6"
+        aliveCellColor="#06b6d4"
+        gridColor="#93c5fd"
+        gridThickness={1}
+        showGridOverlay={true}
+        gridLineOpacity={0.5}
+        animationMode="heatmap"
+        cellAge={10}
+      />
+    );
+
+    // Assert
+    const button = container.querySelector('button');
+    const bgColor = button?.style.backgroundColor;
+    expect(bgColor).toBeTruthy();
+    expect(bgColor).toContain('rgb');
+  });
+
+  it('should show cell age in title when alive', () => {
+    // Arrange
+    const mockOnClick = vi.fn();
+
+    // Act
+    render(
+      <GameCell
+        isAlive={true}
+        onClick={mockOnClick}
+        size={16}
+        deadCellColor="#f3f4f6"
+        aliveCellColor="#06b6d4"
+        gridColor="#93c5fd"
+        gridThickness={1}
+        showGridOverlay={true}
+        gridLineOpacity={0.5}
+        animationMode="none"
+        cellAge={7}
+      />
+    );
+
+    // Assert
+    const button = screen.getByRole('button');
+    expect(button.title).toContain('Age: 7');
+  });
+
+  it('should show Dead in title when not alive', () => {
+    // Arrange
+    const mockOnClick = vi.fn();
+
+    // Act
+    render(
+      <GameCell
+        isAlive={false}
+        onClick={mockOnClick}
+        size={16}
+        deadCellColor="#f3f4f6"
+        aliveCellColor="#06b6d4"
+        gridColor="#93c5fd"
+        gridThickness={1}
+        showGridOverlay={true}
+        gridLineOpacity={0.5}
+        animationMode="none"
+        cellAge={0}
+      />
+    );
+
+    // Assert
+    const button = screen.getByRole('button');
+    expect(button.title).toBe('Dead');
   });
 });

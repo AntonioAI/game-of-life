@@ -91,28 +91,28 @@ export function decodeGridState(encoded: string): EncodedState | null {
     let cellIndex = 0;
     let i = 0;
     
-    while (i < data.length && cellIndex < width * height) {
-      // Read count (base-36 number)
-      let countStr = '';
-      while (i < data.length && data[i] !== '0' && data[i] !== '1') {
-        countStr += data[i];
-        i++;
-      }
-      
-      if (i >= data.length) break;
-      
-      const count = parseInt(countStr, 36);
-      const value = data[i] === '1';
-      i++;
-      
-      // Fill cells
-      for (let j = 0; j < count && cellIndex < width * height; j++) {
-        const row = Math.floor(cellIndex / width);
-        const col = cellIndex % width;
-        grid[row][col] = value;
-        cellIndex++;
-      }
-    }
+     while (i < data.length && cellIndex < width * height) {
+       // Read count (base-36 number)
+       let countStr = '';
+       while (i < data.length && data[i] !== '0' && data[i] !== '1') {
+         countStr += data[i];
+         i++;
+       }
+       
+       if (i >= data.length || countStr === '') break;
+       
+       const count = parseInt(countStr, 36);
+       const value = data[i] === '1';
+       i++;
+       
+       // Fill cells
+       for (let j = 0; j < count && cellIndex < width * height; j++) {
+         const row = Math.floor(cellIndex / width);
+         const col = cellIndex % width;
+         grid[row][col] = value;
+         cellIndex++;
+       }
+     }
     
     return {
       grid,

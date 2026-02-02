@@ -1,12 +1,25 @@
-import { describe, it, expect } from 'vitest';
-import { saveGridState, loadGridState, getSavedStates, deleteSavedState } from './gridStateManager';
+import { describe, it, expect, vi, afterEach } from "vitest";
+import {
+  saveGridState,
+  loadGridState,
+  getSavedStates,
+  deleteSavedState,
+} from "./gridStateManager";
 
-describe('gridStateManager', () => {
-  describe('saveGridState', () => {
-    it('should save a grid state to localStorage', () => {
+describe("gridStateManager", () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  describe("saveGridState", () => {
+    it("should save a grid state to localStorage", () => {
       // Arrange
-      const name = 'test-state';
-      const grid = [[true, false], [false, true]];
+      const name = "test-state";
+      const grid = [
+        [true, false],
+        [false, true],
+      ];
       const generation = 5;
 
       // Act
@@ -20,16 +33,18 @@ describe('gridStateManager', () => {
       expect(parsed.generation).toBe(generation);
     });
 
-    it('should include timestamp when saving', () => {
+    it("should include timestamp when saving", () => {
       // Arrange
-      const name = 'test-timestamp';
+      const name = "test-timestamp";
       const grid = [[true]];
       const generation = 0;
       const before = Date.now();
 
       // Act
       saveGridState(name, grid, generation);
-      const saved = JSON.parse(localStorage.getItem(`game-of-life-state-${name}`)!);
+      const saved = JSON.parse(
+        localStorage.getItem(`game-of-life-state-${name}`)!
+      );
       const after = Date.now();
 
       // Assert
@@ -38,10 +53,10 @@ describe('gridStateManager', () => {
     });
   });
 
-  describe('loadGridState', () => {
-    it('should load a previously saved grid state', () => {
+  describe("loadGridState", () => {
+    it("should load a previously saved grid state", () => {
       // Arrange
-      const name = 'test-load';
+      const name = "test-load";
       const grid = [[true, false, true]];
       const generation = 10;
       saveGridState(name, grid, generation);
@@ -55,9 +70,9 @@ describe('gridStateManager', () => {
       expect(loaded!.generation).toBe(generation);
     });
 
-    it('should return null for non-existent state', () => {
+    it("should return null for non-existent state", () => {
       // Arrange
-      const name = 'non-existent';
+      const name = "non-existent";
 
       // Act
       const loaded = loadGridState(name);
@@ -66,10 +81,10 @@ describe('gridStateManager', () => {
       expect(loaded).toBeNull();
     });
 
-    it('should return null for invalid JSON', () => {
+    it("should return null for invalid JSON", () => {
       // Arrange
-      const name = 'invalid-json';
-      localStorage.setItem(`game-of-life-state-${name}`, 'invalid-json');
+      const name = "invalid-json";
+      localStorage.setItem(`game-of-life-state-${name}`, "invalid-json");
 
       // Act
       const loaded = loadGridState(name);
@@ -79,25 +94,21 @@ describe('gridStateManager', () => {
     });
   });
 
-  describe('getSavedStates', () => {
-    it('should return all saved states', () => {
+  describe("getSavedStates", () => {
+    it("should return all saved states", () => {
       // Arrange
-      localStorage.clear();
-      saveGridState('state1', [[true]], 1);
-      saveGridState('state2', [[false]], 2);
+      saveGridState("state1", [[true]], 1);
+      saveGridState("state2", [[false]], 2);
 
       // Act
       const states = getSavedStates();
 
       // Assert
       expect(states).toHaveLength(2);
-      expect(states.map(s => s.name).sort()).toEqual(['state1', 'state2']);
+      expect(states.map((s) => s.name).sort()).toEqual(["state1", "state2"]);
     });
 
-    it('should return empty array when no states exist', () => {
-      // Arrange
-      localStorage.clear();
-
+    it("should return empty array when no states exist", () => {
       // Act
       const states = getSavedStates();
 
@@ -105,41 +116,42 @@ describe('gridStateManager', () => {
       expect(states).toEqual([]);
     });
 
-    it('should only return game-of-life states', () => {
+    it("should only return game-of-life states", () => {
       // Arrange
-      localStorage.clear();
-      localStorage.setItem('other-key', 'value');
-      saveGridState('state1', [[true]], 1);
+      localStorage.setItem("other-key", "value");
+      saveGridState("state1", [[true]], 1);
 
       // Act
       const states = getSavedStates();
 
       // Assert
       expect(states).toHaveLength(1);
-      expect(states[0].name).toBe('state1');
+      expect(states[0].name).toBe("state1");
     });
 
-    it('should sort states by timestamp descending', () => {
+    it("should sort states by timestamp descending", () => {
       // Arrange
-      localStorage.clear();
-      saveGridState('old', [[true]], 1);
-      setTimeout(() => {
-        saveGridState('new', [[false]], 2);
-      }, 10);
+      const nowSpy = vi.spyOn(Date, "now");
+
+      nowSpy.mockReturnValueOnce(1000); // "old"
+      saveGridState("old", [[true]], 1);
+
+      nowSpy.mockReturnValueOnce(2000); // "new"
+      saveGridState("new", [[false]], 2);
 
       // Act
       const states = getSavedStates();
 
       // Assert
-      expect(states[0].name).toBe('new');
-      expect(states[1].name).toBe('old');
+      expect(states[0].name).toBe("new");
+      expect(states[1].name).toBe("old");
     });
   });
 
-  describe('deleteSavedState', () => {
-    it('should delete a saved state', () => {
+  describe("deleteSavedState", () => {
+    it("should delete a saved state", () => {
       // Arrange
-      const name = 'test-delete';
+      const name = "test-delete";
       saveGridState(name, [[true]], 1);
 
       // Act
@@ -150,9 +162,9 @@ describe('gridStateManager', () => {
       expect(loaded).toBeNull();
     });
 
-    it('should not throw when deleting non-existent state', () => {
+    it("should not throw when deleting non-existent state", () => {
       // Arrange
-      const name = 'non-existent';
+      const name = "non-existent";
 
       // Act & Assert
       expect(() => deleteSavedState(name)).not.toThrow();

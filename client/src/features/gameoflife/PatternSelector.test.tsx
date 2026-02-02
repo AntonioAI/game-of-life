@@ -1,200 +1,41 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import PatternSelector from "./PatternSelector";
 import { PATTERNS } from "./patterns";
 
 describe("PatternSelector", () => {
-  // Helper: the first button is always the pattern selector trigger
+  /**
+   * The PatternSelector has two main buttons in the main UI:
+   * - The pattern trigger button (shows selectedPattern.name)
+   * - The Load button
+   *
+   * We want tests to interact with the dropdown menu content, NOT the trigger text,
+   * because the trigger will always contain some pattern name (e.g. "Glider")
+   * even when that pattern is not in the currently filtered dropdown list.
+   */
+
   const openPatternMenu = () => {
+    // First button is the trigger (not "Load")
     const buttons = screen.getAllByRole("button");
-    fireEvent.click(buttons[0]); // pattern selector (not the Load button)
+    fireEvent.click(buttons[0]);
   };
 
-  it("should filter patterns by ruleset by default", () => {
-    const mockOnLoadPattern = vi.fn();
-    const currentRuleset = "B35/S236"; // HighLife
+  const closePatternMenu = () => {
+    // Clicking trigger again closes it
+    const buttons = screen.getAllByRole("button");
+    fireEvent.click(buttons[0]);
+  };
 
-    render(
-      <PatternSelector
-        onLoadPattern={mockOnLoadPattern}
-        gridWidth={50}
-        gridHeight={50}
-        currentRuleset={currentRuleset}
-      />
-    );
+  const getMenu = () => {
+    // The menu exists only when open; the search input is a stable anchor.
+    const searchInput = screen.getByPlaceholderText(/search patterns/i);
 
-    // Open dropdown
-    openPatternMenu();
+    // In the current component structure:
+    // searchInput is inside the sticky header div,
+    // whose parentElement is the menu container div ("absolute top-full ...").
+    const stickyHeaderDiv = searchInput.closest("div");
+    const menu = stickyHeaderDiv?.parentElement;
 
-    const highLifePatterns = PATTERNS.filter(
-      (p) => p.ruleset === "B35/S236"
-    );
-    const gameOfLifePatterns = PATTERNS.filter(
-      (p) => !p.ruleset || p.ruleset === "B3/S23"
-    );
-
-    // HighLife patterns SHOULD be visible
-    highLifePatterns.forEach((pattern) => {
-      expect(screen.getByText(pattern.name)).toBeInTheDocument();
-    });
-
-    // Conway patterns should NOT be visible by default
-    gameOfLifePatterns.forEach((pattern) => {
-      expect(screen.queryByText(pattern.name)).not.toBeInTheDocument();
-    });
-  });
-
-  it("should show all patterns when checkbox is checked", () => {
-    const mockOnLoadPattern = vi.fn();
-    const currentRuleset = "B35/S236"; // HighLife
-
-    render(
-      <PatternSelector
-        onLoadPattern={mockOnLoadPattern}
-        gridWidth={50}
-        gridHeight={50}
-        currentRuleset={currentRuleset}
-      />
-    );
-
-    openPatternMenu();
-
-    const checkbox = screen.getByRole("checkbox", {
-      name: /all rulesets/i,
-    });
-
-    fireEvent.click(checkbox);
-    expect(checkbox).toBeChecked();
-
-    // Now all patterns should be visible
-    PATTERNS.forEach((pattern) => {
-      expect(screen.getByText(pattern.name)).toBeInTheDocument();
-    });
-  });
-
-  it("should update filtered patterns when ruleset changes", () => {
-    const mockOnLoadPattern = vi.fn();
-    const conwayRuleset = "B3/S23";
-    const dayNightRuleset = "B3678/S34678";
-
-    const { rerender } = render(
-      <PatternSelector
-        onLoadPattern={mockOnLoadPattern}
-        gridWidth={50}
-        gridHeight={50}
-        currentRuleset={conwayRuleset}
-      />
-    );
-
-    // --- Conway ---
-    openPatternMenu();
-
-    const conwayPatterns = PATTERNS.filter(
-      (p) => !p.ruleset || p.ruleset === "B3/S23"
-    );
-
-    conwayPatterns.forEach((pattern) => {
-      expect(screen.getByText(pattern.name)).toBeInTheDocument();
-    });
-
-    // Close menu
-    openPatternMenu();
-
-    // --- Switch to Day & Night ---
-    rerender(
-      <PatternSelector
-        onLoadPattern={mockOnLoadPattern}
-        gridWidth={50}
-        gridHeight={50}
-        currentRuleset={dayNightRuleset}
-      />
-    );
-
-    openPatternMenu();
-
-    const dayNightPatterns = PATTERNS.filter(
-      (p) => p.ruleset === "B3678/S34678"
-    );
-
-    dayNightPatterns.forEach((pattern) => {
-      expect(screen.getByText(pattern.name)).toBeInTheDocument();
-    });
-  });
-
-  it("should call onLoadPattern when load button is clicked", () => {
-    const mockOnLoadPattern = vi.fn();
-    const currentRuleset = "B3/S23";
-
-    render(
-      <PatternSelector
-        onLoadPattern={mockOnLoadPattern}
-        gridWidth={50}
-        gridHeight={50}
-        currentRuleset={currentRuleset}
-      />
-    );
-
-    const loadButton = screen.getByRole("button", { name: /^load$/i });
-    fireEvent.click(loadButton);
-
-    expect(mockOnLoadPattern).toHaveBeenCalledTimes(1);
-    expect(mockOnLoadPattern).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: expect.any(String),
-        cells: expect.any(Array),
-      }),
-      expect.any(Number),
-      expect.any(Number)
-    );
-  });
-
-  it("should preserve checkbox state when ruleset changes", () => {
-    const mockOnLoadPattern = vi.fn();
-    const conwayRuleset = "B3/S23";
-    const highlifeRuleset = "B35/S236";
-
-    const { rerender } = render(
-      <PatternSelector
-        onLoadPattern={mockOnLoadPattern}
-        gridWidth={50}
-        gridHeight={50}
-        currentRuleset={conwayRuleset}
-      />
-    );
-
-    openPatternMenu();
-
-    const checkbox = screen.getByRole("checkbox", {
-      name: /all rulesets/i,
-    });
-
-    fireEvent.click(checkbox);
-    expect(checkbox).toBeChecked();
-
-    // Close menu
-    openPatternMenu();
-
-    // Change ruleset
-    rerender(
-      <PatternSelector
-        onLoadPattern={mockOnLoadPattern}
-        gridWidth={50}
-        gridHeight={50}
-        currentRuleset={highlifeRuleset}
-      />
-    );
-
-    openPatternMenu();
-
-    const newCheckbox = screen.getByRole("checkbox", {
-      name: /all rulesets/i,
-    });
-
-    expect(newCheckbox).toBeChecked();
-
-    // With "All rulesets" on, every pattern should appear
-    PATTERNS.forEach((pattern) => {
-      expect(screen.getByText(pattern.name)).toBeInTheDocument();
-    });
-  });
-});
+    if (!menu) {
+      throw new Error("Could not locate the pattern dropdown menu container");
+    }

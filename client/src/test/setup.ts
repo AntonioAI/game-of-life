@@ -17,7 +17,6 @@ class ResizeObserverMock {
   disconnect() {}
 }
 
-// Only add it if JSDOM hasn't already provided one
 if (!('ResizeObserver' in globalThis)) {
   // @ts-expect-error - intentional test polyfill
   globalThis.ResizeObserver = ResizeObserverMock;
@@ -39,4 +38,12 @@ if (!('setPointerCapture' in Element.prototype)) {
 if (!('releasePointerCapture' in Element.prototype)) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (Element.prototype as any).releasePointerCapture = vi.fn();
+}
+
+// ----------------------------------------------------
+// scrollIntoView polyfill for JSDOM (required by Radix Select)
+// ----------------------------------------------------
+if (!('scrollIntoView' in Element.prototype)) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (Element.prototype as any).scrollIntoView = () => {};
 }

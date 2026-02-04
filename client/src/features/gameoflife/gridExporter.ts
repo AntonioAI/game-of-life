@@ -68,10 +68,14 @@ export function exportGridAsPNG(
     if (!blob) return;
 
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement('a') as any;
     link.href = url;
     link.download = filename;
-    link.click();
+
+    // Defensive: keeps tests (and non-browser envs) from crashing
+    if (typeof link.click === 'function') {
+      link.click();
+    }
 
     URL.revokeObjectURL(url);
   });

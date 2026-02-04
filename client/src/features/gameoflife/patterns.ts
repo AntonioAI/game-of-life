@@ -1,13 +1,18 @@
+export type PatternType = 'still-life' | 'oscillator' | 'spaceship' | 'methuselah' | 'replicator' | 'other';
+
 export interface Pattern {
   name: string;
   description: string;
   cells: [number, number][]; // [row, col] coordinates
+  ruleset?: string; // Optional ruleset notation (e.g., 'B36/S23')
+  type: PatternType; // Pattern category
 }
 
 export const PATTERNS: Pattern[] = [
   {
     name: "Glider",
     description: "Moves diagonally across the grid",
+    type: "spaceship",
     cells: [
       [0, 1],
       [1, 2],
@@ -19,6 +24,7 @@ export const PATTERNS: Pattern[] = [
   {
     name: "Blinker",
     description: "Oscillates between two states (period 2)",
+    type: "oscillator",
     cells: [
       [0, 0],
       [0, 1],
@@ -28,6 +34,7 @@ export const PATTERNS: Pattern[] = [
   {
     name: "Toad",
     description: "Oscillates with period 2",
+    type: "oscillator",
     cells: [
       [0, 1],
       [0, 2],
@@ -40,6 +47,7 @@ export const PATTERNS: Pattern[] = [
   {
     name: "Beacon",
     description: "Oscillates with period 2",
+    type: "oscillator",
     cells: [
       [0, 0],
       [0, 1],
@@ -53,6 +61,7 @@ export const PATTERNS: Pattern[] = [
   {
     name: "Pulsar",
     description: "Oscillates with period 3",
+    type: "oscillator",
     cells: [
       [0, 2],
       [0, 3],
@@ -107,6 +116,7 @@ export const PATTERNS: Pattern[] = [
   {
     name: "Block",
     description: "Still life: remains unchanged",
+    type: "still-life",
     cells: [
       [0, 0],
       [0, 1],
@@ -117,6 +127,7 @@ export const PATTERNS: Pattern[] = [
   {
     name: "Beehive",
     description: "Still life: remains unchanged",
+    type: "still-life",
     cells: [
       [0, 1],
       [0, 2],
@@ -129,6 +140,7 @@ export const PATTERNS: Pattern[] = [
   {
     name: "Loaf",
     description: "Still life: remains unchanged",
+    type: "still-life",
     cells: [
       [0, 1],
       [0, 2],
@@ -142,6 +154,7 @@ export const PATTERNS: Pattern[] = [
   {
     name: "Boat",
     description: "Still life: remains unchanged",
+    type: "still-life",
     cells: [
       [0, 0],
       [0, 1],
@@ -153,6 +166,7 @@ export const PATTERNS: Pattern[] = [
   {
     name: "LWSS",
     description: "Lightweight spaceship - moves horizontally",
+    type: "spaceship",
     cells: [
       [0, 1],
       [0, 4],
@@ -168,6 +182,7 @@ export const PATTERNS: Pattern[] = [
   {
     name: "Pentomino",
     description: "Creates interesting patterns",
+    type: "methuselah",
     cells: [
       [0, 1],
       [1, 1],
@@ -176,4 +191,169 @@ export const PATTERNS: Pattern[] = [
       [2, 1],
     ],
   },
+  // HighLife patterns (B36/S23)
+  {
+    name: "Replicator",
+    description: "HighLife: Self-replicates to create copies (period 6)",
+    type: "replicator",
+    ruleset: "B36/S23",
+    cells: [
+      [0, 0],
+      [0, 1],
+      [0, 2],
+      [1, 0],
+      [1, 2],
+      [2, 0],
+      [2, 1],
+      [2, 2],
+    ],
+  },
+  {
+    name: "Bomber",
+    description: "HighLife: Creates debris while moving",
+    type: "spaceship",
+    ruleset: "B36/S23",
+    cells: [
+      [0, 2],
+      [1, 0],
+      [1, 3],
+      [2, 1],
+      [2, 2],
+      [2, 3],
+    ],
+  },
+  // Day & Night patterns (B3678/S34678)
+  {
+    name: "Diamond",
+    description: "Day & Night: Oscillates creating diamond shapes (period 2)",
+    type: "oscillator",
+    ruleset: "B3678/S34678",
+    cells: [
+      [0, 1],
+      [1, 0],
+      [1, 2],
+      [2, 1],
+    ],
+  },
+  {
+    name: "Inverter",
+    description: "Day & Night: Switches on/off states",
+    type: "other",
+    ruleset: "B3678/S34678",
+    cells: [
+      [0, 0],
+      [0, 1],
+      [0, 2],
+      [1, 0],
+      [1, 2],
+      [2, 0],
+      [2, 1],
+      [2, 2],
+    ],
+  },
+  // Seeds patterns (B2/S)
+  {
+    name: "Two Seeds",
+    description: "Seeds: Explosive expanding pattern",
+    type: "other",
+    ruleset: "B2/S",
+    cells: [
+      [0, 0],
+      [0, 1],
+    ],
+  },
+  // Maze patterns (B3/S12345)
+  {
+    name: "Maze Seed",
+    description: "Maze: Small seed that grows into maze structures",
+    type: "other",
+    ruleset: "B3/S12345",
+    cells: [
+      [0, 1],
+      [1, 0],
+      [1, 2],
+      [2, 1],
+    ],
+  },
+  // Coral patterns (B3/S45678)
+  {
+    name: "Coral Seed",
+    description: "Coral: Grows slowly into coral-like formations",
+    type: "other",
+    ruleset: "B3/S45678",
+    cells: [
+      [0, 0],
+      [0, 1],
+      [1, 0],
+      [1, 1],
+      [2, 2],
+    ],
+  },
+  // Replicator patterns (B1357/S1357)
+  {
+    name: "Square",
+    description: "Replicator: Square that replicates diagonally",
+    type: "replicator",
+    ruleset: "B1357/S1357",
+    cells: [
+      [0, 0],
+      [0, 1],
+      [1, 0],
+      [1, 1],
+    ],
+  },
+  // Life Without Death patterns (B3/S012345678)
+  {
+    name: "Expander",
+    description: "Life Without Death: Continuously expands outward",
+    type: "other",
+    ruleset: "B3/S012345678",
+    cells: [
+      [0, 1],
+      [1, 0],
+      [1, 2],
+      [2, 1],
+    ],
+  },
+  // Move patterns (B368/S245)
+  {
+    name: "Mover",
+    description: "Move: Pattern that slides across the grid",
+    type: "spaceship",
+    ruleset: "B368/S245",
+    cells: [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 2],
+      [2, 0],
+      [2, 2],
+    ],
+  },
+  // Diamoeba patterns (B35678/S5678)
+  {
+    name: "Amoeba",
+    description: "Diamoeba: Creates chaotic diamond-shaped patterns",
+    type: "other",
+    ruleset: "B35678/S5678",
+    cells: [
+      [0, 1],
+      [0, 2],
+      [1, 0],
+      [1, 3],
+      [2, 0],
+      [2, 3],
+      [3, 1],
+      [3, 2],
+    ],
+  },
 ];
+
+export const PATTERN_TYPE_LABELS: Record<PatternType, string> = {
+  'still-life': 'Still Lifes',
+  'oscillator': 'Oscillators',
+  'spaceship': 'Spaceships',
+  'methuselah': 'Methuselahs',
+  'replicator': 'Replicators',
+  'other': 'Other'
+};

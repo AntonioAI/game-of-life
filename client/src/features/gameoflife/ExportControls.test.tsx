@@ -137,6 +137,9 @@ describe('ExportControls', () => {
       );
       fireEvent.click(screen.getByText('Export Grid'));
 
+      // ✅ Switch to RLE UI first
+      fireEvent.click(screen.getByText('RLE Format'));
+
       // Act
       const input = screen.getByPlaceholderText(/Enter pattern name/i);
       fireEvent.change(input, { target: { value: 'My Pattern' } });

@@ -66,7 +66,7 @@ describe('gridExporter', () => {
       const rle = exportGridAsRLE(grid, 'Mixed');
 
       // Assert
-      expect(rle).toContain('2b2bo!');
+      expect(rle).toContain('2b2o!');
     });
   });
 

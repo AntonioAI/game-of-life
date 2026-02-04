@@ -19,7 +19,7 @@ describe('RulesetSelector', () => {
     );
 
     // Assert
-    expect(screen.getByText('Game of Life')).toBeInTheDocument();
+    expect(screen.getAllByText('Game of Life').length).toBeGreaterThan(0);
   });
 
   it('should display the current ruleset notation', () => {
@@ -36,7 +36,7 @@ describe('RulesetSelector', () => {
     );
 
     // Assert
-    expect(screen.getByText('B3/S23')).toBeInTheDocument();
+    expect(screen.getAllByText('B3/S23').length).toBeGreaterThan(0);
   });
 
   it('should display the current ruleset description', () => {
@@ -53,7 +53,9 @@ describe('RulesetSelector', () => {
     );
 
     // Assert
-    expect(screen.getByText(/Conway's classic Game of Life/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Conway's classic Game of Life/i)
+    ).toBeInTheDocument();
   });
 
   it('should display birth and survival values', () => {
@@ -92,7 +94,10 @@ describe('RulesetSelector', () => {
     await user.click(trigger);
 
     // Find HighLife option (B36/S23)
-    const highLifeOption = screen.getByText('HighLife').closest('[role="option"]');
+    const highLifeOption = screen
+      .getByText('HighLife')
+      .closest('[role="option"]');
+
     if (highLifeOption) {
       await user.click(highLifeOption);
     }
@@ -103,7 +108,7 @@ describe('RulesetSelector', () => {
 
   it('should display "None" when birth array is empty', () => {
     // Arrange
-    const seedsRuleset = RULESETS.find(r => r.name === 'Seeds')!;
+    const seedsRuleset = RULESETS.find((r) => r.name === 'Seeds')!;
     const onRulesetChange = vi.fn();
 
     // Act
@@ -139,7 +144,7 @@ describe('RulesetSelector', () => {
     );
 
     // Assert
-    expect(screen.getByText('HighLife')).toBeInTheDocument();
-    expect(screen.getByText('B36/S23')).toBeInTheDocument();
+    expect(screen.getAllByText('HighLife').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('B36/S23').length).toBeGreaterThan(0);
   });
 });

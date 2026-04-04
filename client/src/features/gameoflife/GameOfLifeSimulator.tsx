@@ -177,6 +177,7 @@ function GameOfLifeSimulator() {
         speed={speed}
         boundaryType={boundaryType}
         convergenceState={convergenceState}
+        detectedPatterns={detectedPatterns}
       />
       <PopulationHistory data={populationHistory} />
 

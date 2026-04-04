@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { CycleAnalysis } from './patternAnalyzer';
+import type { PatternMatch } from './patternMatcher';
 
 interface AnalyticsProps {
   generation: number;
@@ -10,6 +11,7 @@ interface AnalyticsProps {
   speed: number;
   boundaryType: 'toroidal' | 'finite';
   convergenceState: CycleAnalysis;
+  detectedPatterns?: PatternMatch[];
 }
 
 function AnalyticsCard({
@@ -52,6 +54,7 @@ function Analytics({
   speed,
   boundaryType,
   convergenceState,
+  detectedPatterns = [],
 }: AnalyticsProps) {
   const totalCells = gridWidth * gridHeight;
   const speedValue = Math.round(speed / 10);
@@ -179,6 +182,45 @@ function Analytics({
           icon={getStatusIcon()}
         />
       </div>
+
+      {/* Detected Patterns Section */}
+      {detectedPatterns.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            Detected Patterns ({detectedPatterns.length})
+          </h3>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {detectedPatterns.map((pattern, index) => (
+              <div
+                key={`${pattern.name}-${pattern.x}-${pattern.y}-${index}`}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    pattern.category === 'Still Life' ? 'bg-green-500' :
+                    pattern.category === 'Oscillator' ? 'bg-blue-500' :
+                    pattern.category === 'Spaceship' ? 'bg-purple-500' :
+                    'bg-red-500'
+                  }`} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {pattern.name}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {pattern.category} • {pattern.width}×{pattern.height} • Rotation: {pattern.rotation}°
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    ({pattern.x}, {pattern.y})
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

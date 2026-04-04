@@ -233,6 +233,7 @@ export function findAllPatternsInGrid(
 /**
  * Find all known patterns in a grid
  * Accepts an array of pattern definitions: { name, category, cells }
+ * Prioritizes larger patterns and prevents overlapping detections
  */
 export function detectPatternsInGrid(
   grid: Grid,
@@ -241,7 +242,17 @@ export function detectPatternsInGrid(
 ): PatternMatch[] {
   const allMatches: PatternMatch[] = [];
 
-  for (const pattern of patterns) {
+  // Sort patterns by size (largest first) to prioritize bigger patterns
+  const sortedPatterns = patterns.sort((a, b) => {
+    const sizeA = a.cells.length;
+    const sizeB = b.cells.length;
+    return sizeB - sizeA; // Largest first
+  });
+
+  // Track used cells to prevent overlapping patterns
+  const usedCells = new Set<string>();
+
+  for (const pattern of sortedPatterns) {
     const matches = findAllPatternsInGrid(
       grid,
       pattern.name,
@@ -249,7 +260,20 @@ export function detectPatternsInGrid(
       pattern.cells,
       maxResultsPerPattern
     );
-    allMatches.push(...matches);
+
+    // Filter out matches that overlap with already detected patterns
+    const nonOverlappingMatches = matches.filter(match => {
+      // Check if any cell in this match is already used
+      const hasOverlap = match.cells.some(([r, c]) => usedCells.has(`${r},${c}`));
+      if (!hasOverlap) {
+        // Mark cells as used
+        match.cells.forEach(([r, c]) => usedCells.add(`${r},${c}`));
+        return true;
+      }
+      return false;
+    });
+
+    allMatches.push(...nonOverlappingMatches);
   }
 
   // Sort by position (top-left to bottom-right)

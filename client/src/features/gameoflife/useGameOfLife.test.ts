@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import useGameOfLife from './useGameOfLife';
+import { PATTERNS } from './patterns';
 
 describe('useGameOfLife', () => {
   describe('initial state', () => {
@@ -426,6 +427,37 @@ describe('useGameOfLife', () => {
 
       // Assert
       expect(result.current.gridLineOpacity).toBe(newOpacity);
+    });
+  });
+
+  describe('pattern loading and detection', () => {
+    it('should detect only the loaded Glider pattern after reset', () => {
+      // Arrange
+      const { result } = renderHook(() => useGameOfLife());
+      const gliderPattern = PATTERNS.find(p => p.name === 'Glider');
+
+      // Act: Reset the simulation
+      act(() => {
+        result.current.reset();
+      });
+
+      // Act: Load the Glider pattern
+      act(() => {
+        result.current.loadPattern(gliderPattern!, 18, 18); // Load at position (18, 18)
+      });
+
+      // Act: Enable pattern detection
+      act(() => {
+        result.current.togglePatternDetection();
+      });
+
+      // Assert: Should detect exactly 1 pattern (the Glider)
+      expect(result.current.detectedPatterns).toHaveLength(1);
+      expect(result.current.detectedPatterns[0].patternName).toBe('Glider');
+      expect(result.current.detectedPatterns[0].patternCategory).toBe('spaceship');
+      expect(result.current.detectedPatterns[0].width).toBe(3);
+      expect(result.current.detectedPatterns[0].height).toBe(3);
+      expect(result.current.detectedPatterns[0].rotation).toBe(0);
     });
   });
 });

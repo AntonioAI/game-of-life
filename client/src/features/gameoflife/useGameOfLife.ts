@@ -301,7 +301,7 @@ function useGameOfLife(): GameOfLifeState {
     // Convert PATTERNS to format expected by detectPatternsInGrid
     const patternsToDetect = PATTERNS.map((p) => ({
       name: p.name,
-      category: p.category,
+      category: p.type,
       cells: p.cells,
     }));
 

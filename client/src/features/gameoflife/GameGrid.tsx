@@ -2,6 +2,8 @@ import * as React from 'react';
 import GameCell from './GameCell';
 import type { AnimationMode } from './animationModes';
 import type { CellAgeGrid } from './useGameOfLife';
+import type { PatternMatch } from './patternMatcher';
+import PatternDetectionOverlay from './PatternDetectionOverlay';
 
 interface GameGridProps {
   grid: boolean[][];
@@ -27,6 +29,8 @@ interface GameGridProps {
   onTouchEnd?: () => void;
   isDragging: boolean;
   getHasDragged: () => boolean;
+  detectedPatterns?: PatternMatch[];
+  showPatternDetection?: boolean;
 }
 
 function GameGrid({
@@ -51,6 +55,8 @@ function GameGrid({
   onTouchStart,
   onTouchMove,
   onTouchEnd,
+  detectedPatterns = [],
+  showPatternDetection = false,
   isDragging,
   getHasDragged,
 }: GameGridProps) {
@@ -146,8 +152,8 @@ function GameGrid({
   }, [isHoveringGrid, onWheel]);
 
   return (
-    <div 
-      ref={containerRef} 
+    <div
+      ref={containerRef}
       className="flex justify-center overflow-auto"
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
@@ -157,14 +163,14 @@ function GameGrid({
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      style={{ 
+      style={{
         cursor: isDragging ? 'grabbing' : 'grab',
-        touchAction: 'none', // Prevent default touch behaviors
-        userSelect: 'none', // Prevent text selection during drag
+        touchAction: 'none',
+        userSelect: 'none',
       }}
     >
-      <div 
-        className="inline-block rounded border-2 border-blue-300 dark:border-blue-700"
+      <div
+        className="relative inline-block rounded border-2 border-blue-300 dark:border-blue-700"
         style={{
           transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px)`,
           transformOrigin: 'center center',
@@ -191,6 +197,11 @@ function GameGrid({
             ))}
           </div>
         ))}
+        <PatternDetectionOverlay
+          detectedPatterns={detectedPatterns}
+          cellSize={cellSize}
+          visible={showPatternDetection}
+        />
       </div>
     </div>
   );

@@ -40,6 +40,7 @@ function GameOfLifeSimulator() {
     animationMode,
     populationHistory,
     ruleset,
+    convergenceState,
     toggleCell,
     toggleSimulation,
     setSpeed,
@@ -60,6 +61,9 @@ function GameOfLifeSimulator() {
     setAnimationMode,
     setRuleset,
     loadSavedState,
+    detectedPatterns,
+    showPatternDetection,
+    togglePatternDetection,
   } = useGameOfLife();
 
   const {
@@ -130,6 +134,8 @@ function GameOfLifeSimulator() {
             onTouchEnd={handleTouchEnd}
             isDragging={isDragging}
             getHasDragged={getHasDragged}
+            detectedPatterns={detectedPatterns}
+            showPatternDetection={showPatternDetection}
           />
           <FloatingZoomControls
             zoom={zoom}
@@ -148,6 +154,8 @@ function GameOfLifeSimulator() {
           onReset={reset}
           onRandomize={randomize}
           onSpeedChange={setSpeed}
+          showPatternDetection={showPatternDetection}
+          onTogglePatternDetection={togglePatternDetection}
         />
       </div>
 
@@ -168,6 +176,7 @@ function GameOfLifeSimulator() {
         gridHeight={gridHeight}
         speed={speed}
         boundaryType={boundaryType}
+        convergenceState={convergenceState}
       />
       <PopulationHistory data={populationHistory} />
 

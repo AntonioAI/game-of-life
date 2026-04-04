@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Button } from '../../components/ui/button';
 import { Slider } from '../../components/ui/slider';
-import { Play, Pause, RotateCcw, SkipForward, SkipBack, Shuffle } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward, SkipBack, Shuffle, Sparkles } from 'lucide-react';
 
 interface FloatingSimulationControlsProps {
   isRunning: boolean;
@@ -13,6 +13,8 @@ interface FloatingSimulationControlsProps {
   onReset: () => void;
   onRandomize: () => void;
   onSpeedChange: (speed: number) => void;
+  showPatternDetection?: boolean;
+  onTogglePatternDetection?: () => void;
 }
 
 function FloatingSimulationControls({
@@ -23,6 +25,8 @@ function FloatingSimulationControls({
   onStep,
   onStepBack,
   onReset,
+  showPatternDetection = false,
+  onTogglePatternDetection,
   onRandomize,
   onSpeedChange,
 }: FloatingSimulationControlsProps) {
@@ -71,6 +75,16 @@ function FloatingSimulationControls({
         >
           <Shuffle className="w-4 h-4" />
         </Button>
+        {onTogglePatternDetection && (
+          <Button
+            onClick={onTogglePatternDetection}
+            size="sm"
+            className={showPatternDetection ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-600 hover:bg-gray-700 text-white'}
+            title={showPatternDetection ? 'Hide Patterns' : 'Show Patterns'}
+          >
+            <Sparkles className="w-4 h-4" />
+          </Button>
+        )}
       </div>
       <div className="flex items-center gap-3">
         <label className="text-xs font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">

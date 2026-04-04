@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { CycleAnalysis } from './patternAnalyzer';
 
 interface AnalyticsProps {
   generation: number;
@@ -8,6 +9,7 @@ interface AnalyticsProps {
   gridHeight: number;
   speed: number;
   boundaryType: 'toroidal' | 'finite';
+  convergenceState: CycleAnalysis;
 }
 
 function AnalyticsCard({
@@ -49,14 +51,81 @@ function Analytics({
   gridHeight,
   speed,
   boundaryType,
+  convergenceState,
 }: AnalyticsProps) {
   const totalCells = gridWidth * gridHeight;
   const speedValue = Math.round(speed / 10);
   const boundaryLabel = boundaryType === 'toroidal' ? 'Toroidal' : 'Finite';
 
+  // Format convergence state display
+  const getStatusLabel = (): string => {
+    switch (convergenceState.type) {
+      case 'stable':
+        return 'Stable';
+      case 'oscillating':
+        return `Oscillating (P${convergenceState.period})`;
+      case 'converging':
+        return 'Converging';
+      case 'chaotic':
+        return 'Chaotic';
+      default:
+        return 'Unknown';
+    }
+  };
+
+  const getStatusIcon = (): string => {
+    switch (convergenceState.type) {
+      case 'stable':
+        return '✓'; // Check mark
+      case 'oscillating':
+        return '🔄'; // Refresh/cycle
+      case 'converging':
+        return '📉'; // Trending down
+      case 'chaotic':
+        return '🌀'; // Spiral
+      default:
+        return '❓';
+    }
+  };
+
+  const getStatusColor = (): {
+    bgColor: string;
+    textColor: string;
+  } => {
+    switch (convergenceState.type) {
+      case 'stable':
+        return {
+          bgColor: 'bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/60 dark:to-green-800/40 border-green-200 dark:border-green-700',
+          textColor: 'text-green-600 dark:text-green-300',
+        };
+      case 'oscillating':
+        return {
+          bgColor: 'bg-gradient-to-br from-yellow-100 to-yellow-50 dark:from-yellow-900/60 dark:to-yellow-800/40 border-yellow-200 dark:border-yellow-700',
+          textColor: 'text-yellow-600 dark:text-yellow-300',
+        };
+      case 'converging':
+        return {
+          bgColor: 'bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/60 dark:to-blue-800/40 border-blue-200 dark:border-blue-700',
+          textColor: 'text-blue-600 dark:text-blue-300',
+        };
+      case 'chaotic':
+        return {
+          bgColor: 'bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/60 dark:to-red-800/40 border-red-200 dark:border-red-700',
+          textColor: 'text-red-600 dark:text-red-300',
+        };
+      default:
+        return {
+          bgColor: 'bg-gray-100 dark:bg-gray-800',
+          textColor: 'text-gray-600 dark:text-gray-300',
+        };
+    }
+  };
+
+  const statusColor = getStatusColor();
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-7">
         <AnalyticsCard
           label="Generation"
           value={generation}
@@ -101,6 +170,13 @@ function Analytics({
           bgColor="bg-gradient-to-br from-rose-100 to-rose-50 dark:from-rose-900/60 dark:to-rose-800/40 border-rose-200 dark:border-rose-700"
           textColor="text-rose-600 dark:text-rose-300"
           icon="🎯"
+        />
+        <AnalyticsCard
+          label="Status"
+          value={getStatusLabel()}
+          bgColor={statusColor.bgColor}
+          textColor={statusColor.textColor}
+          icon={getStatusIcon()}
         />
       </div>
     </div>

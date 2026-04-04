@@ -192,22 +192,22 @@ function Analytics({
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {detectedPatterns.map((pattern, index) => (
               <div
-                key={`${pattern.name}-${pattern.x}-${pattern.y}-${index}`}
+                key={`${pattern.patternName}-${pattern.x}-${pattern.y}-${index}`}
                 className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-3 h-3 rounded-full ${
-                    pattern.category === 'Still Life' ? 'bg-green-500' :
-                    pattern.category === 'Oscillator' ? 'bg-blue-500' :
-                    pattern.category === 'Spaceship' ? 'bg-purple-500' :
+                    pattern.patternCategory === 'Still Life' ? 'bg-green-500' :
+                    pattern.patternCategory === 'Oscillator' ? 'bg-blue-500' :
+                    pattern.patternCategory === 'Spaceship' ? 'bg-purple-500' :
                     'bg-red-500'
                   }`} />
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {pattern.name}
+                      {pattern.patternName}
                     </p>
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                      {pattern.category} • Size: {pattern.width}×{pattern.height} • Rotation: {pattern.rotation}°
+                      {pattern.patternCategory} • Size: {pattern.width}×{pattern.height} • Rotation: {pattern.rotation}°
                     </p>
                   </div>
                 </div>

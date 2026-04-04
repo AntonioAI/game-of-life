@@ -233,8 +233,8 @@ function useGameOfLife(): GameOfLifeState {
 
   const loadPattern = useCallback(
     (pattern: Pattern, startRow: number, startCol: number) => {
-      setGrid((prevGrid) => {
-        const newGrid = prevGrid.map((r) => [...r]);
+      setGrid(() => {
+        const newGrid = createEmptyGrid(gridWidth, gridHeight);
         pattern.cells.forEach(([row, col]) => {
           const actualRow = (startRow + row) % gridHeight;
           const actualCol = (startCol + col) % gridWidth;
@@ -244,6 +244,9 @@ function useGameOfLife(): GameOfLifeState {
         });
         return newGrid;
       });
+      setCellAges(createEmptyCellAgeGrid(gridWidth, gridHeight));
+      setGeneration(0);
+      setIsRunning(false);
     },
     [gridWidth, gridHeight]
   );

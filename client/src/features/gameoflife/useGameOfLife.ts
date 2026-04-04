@@ -1,8 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Pattern } from './patterns';
 import { PATTERNS } from './patterns';
 import type { AnimationMode } from './animationModes';
 import { RULESETS, type Ruleset, applyRule } from './rulesets';
+import { getConvergenceState, type CycleAnalysis } from './patternAnalyzer';
+import { detectPatternsInGrid, type PatternMatch } from './patternMatcher';
 
 type Grid = boolean[][];
 export type CellAgeGrid = number[][];
@@ -27,6 +29,9 @@ export interface GameOfLifeState {
   animationMode: AnimationMode;
   populationHistory: Array<{ generation: number; population: number }>;
   ruleset: Ruleset;
+  convergenceState: CycleAnalysis;
+  detectedPatterns: PatternMatch[];
+  showPatternDetection: boolean;
   toggleCell: (row: number, col: number) => void;
   toggleSimulation: () => void;
   setSpeed: (speed: number) => void;
@@ -46,6 +51,7 @@ export interface GameOfLifeState {
   setGridLineOpacity: (opacity: number) => void;
   setAnimationMode: (mode: AnimationMode) => void;
   setRuleset: (ruleset: Ruleset) => void;
+  togglePatternDetection: () => void;
   loadSavedState: (grid: Grid, generation: number) => void;
 }
 
@@ -171,7 +177,8 @@ function useGameOfLife(): GameOfLifeState {
   const [animationMode, setAnimationMode] = useState<AnimationMode>('fade');
   const [populationHistory, setPopulationHistory] = useState<Array<{ generation: number; population: number }>>([]);
   const [ruleset, setRuleset] = useState<Ruleset>(RULESETS[0]); // Default to Game of Life
-  
+  const [showPatternDetection, setShowPatternDetection] = useState(false);
+  const [detectedPatterns, setDetectedPatterns] = useState<PatternMatch[]>([]);
   // History for stepping back
   const [gridHistory, setGridHistory] = useState<Array<{ grid: Grid; cellAges: CellAgeGrid }>>([]);
 
@@ -226,8 +233,8 @@ function useGameOfLife(): GameOfLifeState {
 
   const loadPattern = useCallback(
     (pattern: Pattern, startRow: number, startCol: number) => {
-      setGrid((prevGrid) => {
-        const newGrid = prevGrid.map((r) => [...r]);
+      setGrid(() => {
+        const newGrid = createEmptyGrid(gridWidth, gridHeight);
         pattern.cells.forEach(([row, col]) => {
           const actualRow = (startRow + row) % gridHeight;
           const actualCol = (startCol + col) % gridWidth;
@@ -237,6 +244,9 @@ function useGameOfLife(): GameOfLifeState {
         });
         return newGrid;
       });
+      setCellAges(createEmptyCellAgeGrid(gridWidth, gridHeight));
+      setGeneration(0);
+      setIsRunning(false);
     },
     [gridWidth, gridHeight]
   );
@@ -273,6 +283,36 @@ function useGameOfLife(): GameOfLifeState {
 
   const liveCells = countLiveCells(grid);
   const populationDensity = (liveCells / (gridWidth * gridHeight)) * 100;
+
+  // Calculate convergence state based on grid history
+  const convergenceState = useMemo(() => {
+    const gridHistoryArray = gridHistory.map((entry) => entry.grid);
+    const populationHistoryArray = populationHistory.map((entry) => ({ population: entry.population }));
+    return getConvergenceState(grid, gridHistoryArray, populationHistoryArray);
+  }, [grid, gridHistory, populationHistory]);
+
+  // Detect patterns in grid when pattern detection is enabled
+  useMemo(() => {
+    if (!showPatternDetection) {
+      setDetectedPatterns([]);
+      return;
+    }
+
+    // Convert PATTERNS to format expected by detectPatternsInGrid
+    const patternsToDetect = PATTERNS.map((p) => ({
+      name: p.name,
+      category: p.type,
+      cells: p.cells,
+    }));
+
+    // Detect max 5 instances per pattern for performance
+    const detected = detectPatternsInGrid(grid, patternsToDetect, 5);
+    setDetectedPatterns(detected);
+  }, [grid, showPatternDetection]);
+
+  const togglePatternDetection = useCallback(() => {
+    setShowPatternDetection((prev) => !prev);
+  }, []);
 
   useEffect(() => {
     if (!isRunning) {
@@ -349,6 +389,9 @@ function useGameOfLife(): GameOfLifeState {
     populationDensity,
     boundaryType,
     gridColor,
+    convergenceState,
+    detectedPatterns,
+    showPatternDetection,
     deadCellColor,
     aliveCellColor,
     gridThickness,
@@ -376,6 +419,7 @@ function useGameOfLife(): GameOfLifeState {
     setGridLineOpacity,
     setAnimationMode,
     setRuleset,
+    togglePatternDetection,
     loadSavedState,
   };
 }

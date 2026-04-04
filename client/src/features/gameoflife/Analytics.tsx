@@ -207,13 +207,13 @@ function Analytics({
                       {pattern.name}
                     </p>
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                      {pattern.category} • {pattern.width}×{pattern.height} • Rotation: {pattern.rotation}°
+                      {pattern.category} • Size: {pattern.width}×{pattern.height} • Rotation: {pattern.rotation}°
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-500 dark:text-gray-500">
-                    ({pattern.x}, {pattern.y})
+                    Position: ({pattern.x}, {pattern.y})
                   </p>
                 </div>
               </div>

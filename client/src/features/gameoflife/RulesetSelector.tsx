@@ -29,13 +29,15 @@ function RulesetSelector({ currentRuleset, onRulesetChange }: RulesetSelectorPro
         </label>
         <Select value={currentRuleset.notation} onValueChange={handleRulesetChange}>
           <SelectTrigger className="w-full">
-            <SelectValue>
-              <div className="flex items-center justify-between w-full min-w-0">
-                <span className="font-medium truncate">{currentRuleset.name}</span>
+            <SelectValue asChild>
+              <span className="flex items-center justify-between w-full min-w-0">
+                <span className="flex-1 min-w-0 font-medium truncate">
+                  {currentRuleset.name}
+                </span>
                 <span className="flex-shrink-0 text-xs text-gray-500 dark:text-gray-400 ml-2">
                   {currentRuleset.notation}
                 </span>
-              </div>
+              </span>
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="max-h-[300px]">
